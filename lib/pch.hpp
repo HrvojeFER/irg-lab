@@ -8,7 +8,11 @@
 #define LIB_PCH_HPP
 
 // add headers that you want to pre-compile here
-#include <iostream>
+#include <exception>
+
+#include <array>
+
+#include <cmath>
 
 #include "glm/glm.hpp"
 
