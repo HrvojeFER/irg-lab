@@ -11,12 +11,16 @@
 #include <iostream>
 #include <string>
 #include <cstring>
+// UINT32_MAX needed
+#include <cstdint>
+#include <algorithm>
 
 #include <vector>
 #include <array>
 #include <set>
 
 
+// GLFW includes Vulkan with the following macro.
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 

@@ -23,8 +23,8 @@ namespace irglab
     private:
         const std::string app_name_ = "IrgLab";
 		
-        const int window_width_ = 800;
-        const int window_height_ = 600;
+        const unsigned int window_width_ = 800;
+        const unsigned int window_height_ = 600;
         const std::string window_title_ = app_name_;
         GLFWwindow* window_ = nullptr;
 
@@ -50,6 +50,8 @@ namespace irglab
 
 		VkQueue graphics_queue_ = VK_NULL_HANDLE;
         VkQueue present_queue_ = VK_NULL_HANDLE;
+
+        VkSwapchainKHR swap_chain_ = VK_NULL_HANDLE;
 		
         void init_window()
         {
@@ -59,8 +61,8 @@ namespace irglab
             glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
             window_ = glfwCreateWindow(
-                window_width_,
-                window_height_,
+                static_cast<int>(window_width_),
+                static_cast<int>(window_height_),
                 window_title_.c_str(),
                 nullptr,
                 nullptr
@@ -74,6 +76,7 @@ namespace irglab
             create_surface();
             select_physical_device();
             create_logical_device();
+            create_swap_chain();
         }
 
         void main_loop()
@@ -87,6 +90,8 @@ namespace irglab
         // ReSharper disable once CppMemberFunctionMayBeConst
         void cleanup()
     	{
+            vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
+        	
             vkDestroyDevice(device_, nullptr);
         	
             if (enable_validation_layers_) 
@@ -120,7 +125,7 @@ namespace irglab
             create_info.pApplicationInfo = &app_info;
 
         	
-            auto required_glfw_extensions = get_required_glfw_extensions();
+            auto required_glfw_extensions = get_required_glfw_extension_names();
             if (!glfw_extensions_supported(required_glfw_extensions))
             {
                 throw std::runtime_error("GLFW extensions not supported");
@@ -229,7 +234,7 @@ namespace irglab
         }
 
         void create_logical_device() {
-            auto indices = find_queue_families(physical_device_);
+            auto indices = query_queue_families(physical_device_);
 
             std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
             std::set<uint32_t> unique_queue_families = 
@@ -301,10 +306,73 @@ namespace irglab
             std::cout << "Device queues created." << std::endl;
         }
 
+        void create_swap_chain()
+        {
+	        const auto swap_chain_support = query_swap_chain_support(physical_device_);
 
-        [[nodiscard]] std::vector<const char*> get_required_glfw_extensions() const
+	        const auto surface_format = select_swap_surface_format(swap_chain_support.formats);
+            const auto present_mode = select_swap_present_mode(swap_chain_support.present_modes);
+	        const auto extent = select_swap_extent(swap_chain_support.capabilities);
+
+	        auto image_count = swap_chain_support.capabilities.minImageCount + 1;
+        	// 0 means there is no maximum
+        	if (swap_chain_support.capabilities.maxImageCount > 0 &&
+                image_count > swap_chain_support.capabilities.maxImageCount)
+        	{
+                image_count = swap_chain_support.capabilities.maxImageCount;
+        	}
+
+            VkSwapchainCreateInfoKHR create_info = {};
+            create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+            create_info.surface = surface_;
+
+            create_info.minImageCount = image_count;
+            create_info.imageFormat = surface_format.format;
+            create_info.imageColorSpace = surface_format.colorSpace;
+            create_info.imageExtent = extent;
+            create_info.imageArrayLayers = 1;
+            create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+            const auto indices = query_queue_families(physical_device_);
+            const std::array<unsigned int, 2> queue_family_indices
+        	{
+            	indices.graphics_family.value(),
+            	indices.present_family.value()
+            };
+            if (indices.graphics_family != indices.present_family) 
+            {
+                create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+                create_info.queueFamilyIndexCount = 2;
+                create_info.pQueueFamilyIndices = queue_family_indices.data();
+            }
+            else 
+            {
+                create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+                create_info.queueFamilyIndexCount = 0; // Optional
+                create_info.pQueueFamilyIndices = nullptr; // Optional
+            }
+
+            create_info.preTransform = swap_chain_support.capabilities.currentTransform;
+        	
+            create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+            create_info.presentMode = present_mode;
+            create_info.clipped = VK_TRUE;
+
+            create_info.oldSwapchain = VK_NULL_HANDLE;
+
+            if (vkCreateSwapchainKHR(device_, &create_info, nullptr, &swap_chain_) != VK_SUCCESS) 
+            {
+                throw std::runtime_error("Failed to create a swap chain.");
+            }
+
+            std::cout << "Swap chain created." << std::endl;
+        }
+		
+
+        [[nodiscard]] std::vector<const char*> get_required_glfw_extension_names() const
     	{
-            uint32_t glfw_extension_count = 0;
+            unsigned int glfw_extension_count = 0;
             // ReSharper disable once CppUseAuto
             const char** glfw_extensions = 
                 glfwGetRequiredInstanceExtensions(&glfw_extension_count);
@@ -324,7 +392,7 @@ namespace irglab
         [[nodiscard]] bool glfw_extensions_supported(
             const std::vector<const char*>& required_extensions) const
         {
-            uint32_t extension_count;
+            unsigned int extension_count;
             if (vkEnumerateInstanceExtensionProperties(
                 nullptr,
                 &extension_count,
@@ -361,7 +429,7 @@ namespace irglab
 
         [[nodiscard]] bool validation_layers_supported() const
     	{
-            uint32_t layer_count;
+            unsigned int layer_count;
             if (vkEnumerateInstanceLayerProperties(&layer_count, nullptr) != VK_SUCCESS)
             {
                 throw std::runtime_error("Failed to enumerate instance layers.");
@@ -415,7 +483,7 @@ namespace irglab
 
         [[nodiscard]] bool device_suitable(const VkPhysicalDevice& device) const
 		{
-			const auto indices = find_queue_families(device);
+			const auto indices = query_queue_families(device);
 
             const auto extensions_supported = device_extensions_supported(device);
 
@@ -432,19 +500,19 @@ namespace irglab
 
         struct queue_family_indices
 		{
-            std::optional<uint32_t> graphics_family;
-            std::optional<uint32_t> present_family;
+            std::optional<unsigned int> graphics_family;
+            std::optional<unsigned int> present_family;
 
             [[nodiscard]] bool is_complete() const {
                 return graphics_family.has_value() && present_family.has_value();
             }
         };
 
-        [[nodiscard]] queue_family_indices find_queue_families(const VkPhysicalDevice& device) const
+        [[nodiscard]] queue_family_indices query_queue_families(const VkPhysicalDevice& device) const
 		{
             queue_family_indices indices;
 
-            uint32_t queue_family_count = 0;
+            unsigned int queue_family_count = 0;
             vkGetPhysicalDeviceQueueFamilyProperties(
                 device,
                 &queue_family_count,
@@ -487,7 +555,7 @@ namespace irglab
 
 		[[nodiscard]] bool device_extensions_supported(const VkPhysicalDevice& device) const
         {
-            uint32_t extension_count;
+            unsigned int extension_count;
             if (vkEnumerateDeviceExtensionProperties(
                 device,
                 nullptr,
@@ -537,7 +605,7 @@ namespace irglab
                 throw std::runtime_error("Failed to get physical device surface capabilities.");
             }
 
-            uint32_t format_count;
+            unsigned int format_count;
             if (vkGetPhysicalDeviceSurfaceFormatsKHR(
                 device,
                 surface_,
@@ -560,7 +628,7 @@ namespace irglab
                 }
             }
 
-            uint32_t present_mode_count;
+            unsigned int present_mode_count;
 			if (vkGetPhysicalDeviceSurfacePresentModesKHR(
                 device,
                 surface_,
@@ -584,6 +652,59 @@ namespace irglab
             }
 			
             return details;
+		}
+
+        // ReSharper disable once CppMemberFunctionMayBeStatic
+        [[nodiscard]] VkSurfaceFormatKHR select_swap_surface_format(
+            const std::vector<VkSurfaceFormatKHR>& available_formats) const
+		{
+            for (const auto& available_format : available_formats)
+            {
+                if (available_format.format == VK_FORMAT_B8G8R8A8_SRGB &&
+                    available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                {
+                    return available_format;
+                }
+            }
+
+            std::cerr << "Failed to find a desirable surface format. \
+The first available format will be selected instead." << std::endl;
+
+            return available_formats[0];
+		}
+
+        // ReSharper disable once CppMemberFunctionMayBeStatic
+        [[nodiscard]] VkPresentModeKHR select_swap_present_mode(
+            const std::vector<VkPresentModeKHR>& available_present_modes) const
+		{
+            for (const auto& available_present_mode : available_present_modes) {
+                if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+                    std::cout << "Triple buffering available." << std::endl;
+                    return available_present_mode;
+                }
+            }
+
+            std::cout << "Triple buffering unavailable. \
+Using standard FIFO presentation mode (Vsync)." << std::endl;
+            return VK_PRESENT_MODE_FIFO_KHR;
+        }
+
+        [[nodiscard]] VkExtent2D select_swap_extent(
+            const VkSurfaceCapabilitiesKHR capabilities) const
+		{
+            if (capabilities.currentExtent.width != UINT32_MAX) {
+                return capabilities.currentExtent;
+            }
+			
+            VkExtent2D actual_extent = { window_width_, window_height_ };
+
+			// Clamps the extent to the capabilities of Vulkan.
+            actual_extent.width = std::max(capabilities.minImageExtent.width, 
+                std::min(capabilities.maxImageExtent.width, actual_extent.width));
+            actual_extent.height = std::max(capabilities.minImageExtent.height, 
+                std::min(capabilities.maxImageExtent.height, actual_extent.height));
+
+            return actual_extent;
 		}
 
 
