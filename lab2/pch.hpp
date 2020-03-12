@@ -8,6 +8,7 @@
 #include <functional>
 #include <optional>
 
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <cstring>
@@ -18,6 +19,7 @@
 #include <vector>
 #include <array>
 #include <set>
+#include <map>
 
 
 // GLFW includes Vulkan with the following macro.

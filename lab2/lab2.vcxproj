@@ -118,6 +118,17 @@
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.131.2\Lib;C:\VulkanSDK\glfw-3.3.2.bin.WIN64\lib-vc2019</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File pre-build.ps1</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Pre-build script: compiling shaders to SPIR-V.</Message>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>if not exist "$(OutputPath)spirv" mkdir "$(OutputPath)spirv"
+xcopy "$(ProjectDir)spirv" "$(OutputPath)spirv" /Y</Command>
+      <Message>Post-build: copying SPIR-V shader byte code files.</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -158,6 +169,17 @@
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.131.2\Lib;C:\VulkanSDK\glfw-3.3.2.bin.WIN64\lib-vc2019</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File pre-build.ps1</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Pre-build script: compiling shaders to SPIR-V.</Message>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>if not exist "$(OutputPath)spirv" mkdir "$(OutputPath)spirv"
+xcopy "$(ProjectDir)spirv" "$(OutputPath)spirv" /Y</Command>
+      <Message>Post-build: copying SPIR-V shader byte code files.</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

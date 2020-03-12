@@ -56,6 +56,7 @@ namespace irglab
         VkExtent2D swap_chain_extent_ {};
         std::vector<VkImage> swap_chain_images_ {};
         std::vector<VkImageView> swap_chain_image_views_ {};
+
 		
         void init_window()
         {
@@ -82,7 +83,7 @@ namespace irglab
             create_logical_device();
             create_swap_chain();
             create_image_views();
-        	
+            create_graphics_pipeline();
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
@@ -119,11 +120,44 @@ namespace irglab
 
             glfwTerminate();
         }
+
+		
+		void create_graphics_pipeline()
+        {
+	        const auto vertex_shader_code = 
+                read_shader_file("./spirv/vertex_shader.spirv");
+	        const auto fragment_shader_code = 
+                read_shader_file("./spirv/fragment_shader.spirv");
+
+            const auto vertex_shader_module = create_shader_module(vertex_shader_code);
+            const auto fragment_shader_module = create_shader_module(fragment_shader_code);
+
+            VkPipelineShaderStageCreateInfo vertex_shader_stage_info{};
+            vertex_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            vertex_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+            vertex_shader_stage_info.module = vertex_shader_module;
+            vertex_shader_stage_info.pName = "main";
+
+            VkPipelineShaderStageCreateInfo fragment_shader_stage_info{};
+        	fragment_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            fragment_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            fragment_shader_stage_info.module = fragment_shader_module;
+            fragment_shader_stage_info.pName = "main";
+
+            std::array<VkPipelineShaderStageCreateInfo, 2> shader_stages
+            {
+                vertex_shader_stage_info,
+                fragment_shader_stage_info
+            };
+
+            std::cout << "Shader modules created." << std::endl;
+        	
+        }
 		
 		
         void create_instance()
 		{
-            VkApplicationInfo app_info = {};
+            VkApplicationInfo app_info{};
             app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
             app_info.pApplicationName = app_name_.c_str();
             app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -132,7 +166,7 @@ namespace irglab
             app_info.apiVersion = VK_API_VERSION_1_2;
 
         	
-            VkInstanceCreateInfo create_info = {};
+            VkInstanceCreateInfo create_info{};
             create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
             create_info.pApplicationInfo = &app_info;
 
@@ -146,7 +180,7 @@ namespace irglab
             create_info.ppEnabledExtensionNames = required_glfw_extensions.data();
 
 
-            VkDebugUtilsMessengerCreateInfoEXT debug_create_info = {};
+            VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
             populate_debug_messenger_create_info(debug_create_info);
             if (enable_validation_layers_)
             {
@@ -179,7 +213,7 @@ namespace irglab
 		{
             if (!enable_validation_layers_) return;
         	
-            VkDebugUtilsMessengerCreateInfoEXT create_info = {};
+            VkDebugUtilsMessengerCreateInfoEXT create_info{};
             populate_debug_messenger_create_info(create_info);
 
             if (create_debug_utils_messenger_ext(
@@ -257,7 +291,7 @@ namespace irglab
 
             auto queue_priority = 1.0f;
             for (auto queue_family : unique_queue_families) {
-                VkDeviceQueueCreateInfo queue_create_info = {};
+                VkDeviceQueueCreateInfo queue_create_info{};
                 queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
                 queue_create_info.queueFamilyIndex = queue_family;
                 queue_create_info.queueCount = 1;
@@ -266,15 +300,15 @@ namespace irglab
             	queue_create_infos.push_back(queue_create_info);
             }
         	
-            VkDeviceQueueCreateInfo queue_create_info = {};
+            VkDeviceQueueCreateInfo queue_create_info{};
             queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queue_create_info.queueFamilyIndex = indices.graphics_family.value();
             queue_create_info.queueCount = 1;
             queue_create_info.pQueuePriorities = &queue_priority;
 
-            VkPhysicalDeviceFeatures device_features = {};
+            VkPhysicalDeviceFeatures device_features{};
         	
-            VkDeviceCreateInfo create_info = {};
+            VkDeviceCreateInfo create_info{};
             create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
             create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
             create_info.pQueueCreateInfos = queue_create_infos.data();
@@ -334,7 +368,7 @@ namespace irglab
                 image_count = swap_chain_support.capabilities.maxImageCount;
         	}
 
-            VkSwapchainCreateInfoKHR create_info = {};
+            VkSwapchainCreateInfoKHR create_info{};
             create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
             create_info.surface = surface_;
 
@@ -407,9 +441,9 @@ namespace irglab
         {
             swap_chain_image_views_.resize(swap_chain_images_.size());
 
-        	for(unsigned long long i = 0 ; i < swap_chain_images_.size() ; ++i)
+        	for(size_t i = 0 ; i < swap_chain_images_.size() ; ++i)
         	{
-                VkImageViewCreateInfo create_info = {};
+                VkImageViewCreateInfo create_info{};
                 create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
                 create_info.image = swap_chain_images_[i];
 
@@ -778,6 +812,26 @@ Using standard FIFO presentation mode (Vsync)." << std::endl;
             return actual_extent;
 		}
 
+        [[nodiscard]] VkShaderModule create_shader_module(const std::vector<char>& code) const
+		{
+            VkShaderModuleCreateInfo create_info = {};
+            create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+            create_info.codeSize = code.size();
+            create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+            VkShaderModule shader_module;
+            if (vkCreateShaderModule(
+                device_,
+                &create_info,
+                nullptr,
+                &shader_module) != VK_SUCCESS) 
+            {
+                throw std::runtime_error("failed to create shader module!");
+            }
+
+            return shader_module;
+        }
+		
 
         static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
             VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
