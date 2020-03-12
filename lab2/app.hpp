@@ -263,7 +263,8 @@ namespace irglab
             create_info.pQueueCreateInfos = queue_create_infos.data();
             create_info.pEnabledFeatures = &device_features;
 
-            create_info.enabledExtensionCount = 0;
+            create_info.enabledExtensionCount = static_cast<uint32_t>(device_extensions_.size());
+            create_info.ppEnabledExtensionNames = device_extensions_.data();
 
             if (enable_validation_layers_)
             {
