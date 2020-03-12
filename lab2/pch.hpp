@@ -6,6 +6,7 @@
 
 #include <stdexcept>
 #include <functional>
+#include <optional>
 
 #include <iostream>
 #include <string>
