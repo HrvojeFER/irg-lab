@@ -418,8 +418,16 @@ namespace irglab
 			const auto indices = find_queue_families(device);
 
             const auto extensions_supported = device_extensions_supported(device);
+
+            auto swap_chain_adequate = false;
+            if (extensions_supported) {
+	            const auto swap_chain_support = query_swap_chain_support(device);
+                swap_chain_adequate = 
+                    !swap_chain_support.formats.empty() && 
+                    !swap_chain_support.present_modes.empty();
+            }
         	
-            return indices.is_complete() && extensions_supported;
+            return indices.is_complete() && extensions_supported && swap_chain_adequate;
         }
 
         struct queue_family_indices
@@ -510,6 +518,74 @@ namespace irglab
             return required_extensions.empty();
         }
 
+        struct swap_chain_support_details {
+            VkSurfaceCapabilitiesKHR capabilities;
+            std::vector<VkSurfaceFormatKHR> formats;
+            std::vector<VkPresentModeKHR> present_modes;
+        };
+
+		[[nodiscard]] swap_chain_support_details query_swap_chain_support(
+			const VkPhysicalDevice& device) const
+		{
+            swap_chain_support_details details = {};
+
+            if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+                device,
+                surface_,
+                &details.capabilities) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to get physical device surface capabilities.");
+            }
+
+            uint32_t format_count;
+            if (vkGetPhysicalDeviceSurfaceFormatsKHR(
+                device,
+                surface_,
+                &format_count,
+                nullptr) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to get physical device surface formats.");
+            }
+
+            if (format_count > 0) 
+            {
+                details.formats.resize(format_count);
+            	if (vkGetPhysicalDeviceSurfaceFormatsKHR(
+                    device,
+                    surface_,
+                    &format_count,
+                    details.formats.data()) != VK_SUCCESS)
+                {
+                    throw std::runtime_error("Failed to get physical device surface formats.");
+                }
+            }
+
+            uint32_t present_mode_count;
+			if (vkGetPhysicalDeviceSurfacePresentModesKHR(
+                device,
+                surface_,
+                &present_mode_count,
+                nullptr) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to get physical device surface present modes.");
+            }
+			
+            if (present_mode_count > 0) {
+                details.present_modes.resize(present_mode_count);
+            	if (vkGetPhysicalDeviceSurfacePresentModesKHR(
+                    device,
+                    surface_,
+                    &present_mode_count,
+                    details.present_modes.data()) != VK_SUCCESS)
+                {
+                    throw std::runtime_error(
+                        "Failed to get physical device surface present modes.");
+                }
+            }
+			
+            return details;
+		}
+
 
         static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
             VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
@@ -517,7 +593,7 @@ namespace irglab
             const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
             void* p_user_data)
 		{
-            std::cerr << "validation layer: " << p_callback_data->pMessage << std::endl;
+            std::cerr << "Validation layer: " << std::endl << p_callback_data->pMessage << std::endl;
 
             return VK_FALSE;
         }
