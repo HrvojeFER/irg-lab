@@ -55,6 +55,7 @@ namespace irglab
         VkFormat swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
         VkExtent2D swap_chain_extent_ {};
         std::vector<VkImage> swap_chain_images_ {};
+        std::vector<VkImageView> swap_chain_image_views_ {};
 		
         void init_window()
         {
@@ -80,8 +81,11 @@ namespace irglab
             select_physical_device();
             create_logical_device();
             create_swap_chain();
+            create_image_views();
+        	
         }
 
+        // ReSharper disable once CppMemberFunctionMayBeConst
         void main_loop()
     	{
             while (!glfwWindowShouldClose(window_)) 
@@ -93,6 +97,11 @@ namespace irglab
         // ReSharper disable once CppMemberFunctionMayBeConst
         void cleanup()
     	{
+            for (auto image_view : swap_chain_image_views_)
+            {
+                vkDestroyImageView(device_, image_view, nullptr);
+            }
+        	
             vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
         	
             vkDestroyDevice(device_, nullptr);
@@ -110,7 +119,7 @@ namespace irglab
 
             glfwTerminate();
         }
-
+		
 		
         void create_instance()
 		{
@@ -392,6 +401,43 @@ namespace irglab
             }
 
             std::cout << "Swap chain images retrieved." << std::endl;
+        }
+
+		void create_image_views()
+        {
+            swap_chain_image_views_.resize(swap_chain_images_.size());
+
+        	for(unsigned long long i = 0 ; i < swap_chain_images_.size() ; ++i)
+        	{
+                VkImageViewCreateInfo create_info = {};
+                create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+                create_info.image = swap_chain_images_[i];
+
+                create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+                create_info.format = swap_chain_image_format_;
+
+                create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+                create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+                create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+                create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+                create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                create_info.subresourceRange.baseMipLevel = 0;
+                create_info.subresourceRange.levelCount = 1;
+                create_info.subresourceRange.baseArrayLayer = 0;
+                create_info.subresourceRange.layerCount = 1;
+
+                if (vkCreateImageView(
+                    device_,
+                    &create_info,
+                    nullptr,
+                    &swap_chain_image_views_[i]) != VK_SUCCESS) 
+                {
+                    throw std::runtime_error("Failed to create image view.");
+                }
+        	}
+
+            std::cout << "Image views created" << std::endl;
         }
 		
 
