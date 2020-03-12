@@ -29,20 +29,24 @@ namespace irglab
         GLFWwindow* window_ = nullptr;
 
         VkInstance instance_ = VK_NULL_HANDLE;
-        const std::vector<const char*> validation_layers_ = 
-        {
-			"VK_LAYER_KHRONOS_validation"
-        };
 #ifdef NDEBUG
         const bool enable_validation_layers_ = false;
 #else
         const bool enable_validation_layers_ = true;
 #endif
-        VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;  // NOLINT(clang-diagnostic-unused-private-field)
-        VkSurfaceKHR surface_ = VK_NULL_HANDLE;
+        const std::vector<const char*> validation_layers_ =
+        {
+            "VK_LAYER_KHRONOS_validation"
+        };
+        VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
+		
+		VkSurfaceKHR surface_ = VK_NULL_HANDLE;
 		
         VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
         VkDevice device_ = VK_NULL_HANDLE;
+        const std::vector<const char*> device_extensions_ = {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
 
 		VkQueue graphics_queue_ = VK_NULL_HANDLE;
         VkQueue present_queue_ = VK_NULL_HANDLE;
@@ -411,8 +415,10 @@ namespace irglab
         [[nodiscard]] bool device_suitable(const VkPhysicalDevice& device) const
 		{
 			const auto indices = find_queue_families(device);
+
+            const auto extensions_supported = device_extensions_supported(device);
         	
-            return indices.is_complete();
+            return indices.is_complete() && extensions_supported;
         }
 
         struct queue_family_indices
@@ -468,6 +474,39 @@ namespace irglab
             }
         	
             return indices;
+        }
+
+		[[nodiscard]] bool device_extensions_supported(const VkPhysicalDevice& device) const
+        {
+            uint32_t extension_count;
+            if (vkEnumerateDeviceExtensionProperties(
+                device,
+                nullptr,
+                &extension_count,
+                nullptr) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to enumerate device extensions.");
+            }
+
+            std::vector<VkExtensionProperties> available_extensions(extension_count);
+            if (vkEnumerateDeviceExtensionProperties(
+                device,
+                nullptr,
+                &extension_count,
+                available_extensions.data()) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to enumerate device extensions.");
+            }
+
+            std::set<std::string> required_extensions(
+                device_extensions_.begin(),
+                device_extensions_.end());
+
+            for (const auto& extension : available_extensions) {
+                required_extensions.erase(extension.extensionName);
+            }
+
+            return required_extensions.empty();
         }
 
 
