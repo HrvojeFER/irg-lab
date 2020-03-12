@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <array>
+#include <set>
 
 
 #define GLFW_INCLUDE_VULKAN

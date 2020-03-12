@@ -1,3 +1,4 @@
+// ReSharper disable CppZeroConstantCanBeReplacedWithNullptr
 #ifndef APP_HPP
 #define APP_HPP
 
@@ -27,7 +28,7 @@ namespace irglab
         const std::string window_title_ = app_name_;
         GLFWwindow* window_ = nullptr;
 
-        VkInstance instance_ = nullptr;
+        VkInstance instance_ = VK_NULL_HANDLE;
         const std::vector<const char*> validation_layers_ = 
         {
 			"VK_LAYER_KHRONOS_validation"
@@ -37,13 +38,14 @@ namespace irglab
 #else
         const bool enable_validation_layers_ = true;
 #endif
-        VkDebugUtilsMessengerEXT debug_messenger_ = nullptr;  // NOLINT(clang-diagnostic-unused-private-field)
-
-        // ReSharper disable once CppZeroConstantCanBeReplacedWithNullptr
+        VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;  // NOLINT(clang-diagnostic-unused-private-field)
+        VkSurfaceKHR surface_ = VK_NULL_HANDLE;
+		
         VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
-        VkDevice device_ = nullptr;
+        VkDevice device_ = VK_NULL_HANDLE;
 
-		VkQueue graphics_queue_ = nullptr;
+		VkQueue graphics_queue_ = VK_NULL_HANDLE;
+        VkQueue present_queue_ = VK_NULL_HANDLE;
 		
         void init_window()
         {
@@ -65,6 +67,7 @@ namespace irglab
     	{
             create_instance();
             setup_debug_messenger();
+            create_surface();
             select_physical_device();
             create_logical_device();
         }
@@ -86,6 +89,8 @@ namespace irglab
             {
                 destroy_debug_utils_messenger_ext(instance_, debug_messenger_, nullptr);
             }
+
+            vkDestroySurfaceKHR(instance_, surface_, nullptr);
         	
             vkDestroyInstance(instance_, nullptr);
         	
@@ -149,7 +154,6 @@ namespace irglab
             std::cout << "Vulkan instance created." << std::endl;
         }
 
-		
         void setup_debug_messenger()
 		{
             if (!enable_validation_layers_) return;
@@ -169,6 +173,18 @@ namespace irglab
             std::cout << "Debug messenger created." << std::endl;
         }
 
+        void create_surface()
+        {
+            if (glfwCreateWindowSurface(
+                instance_,
+                window_,
+                nullptr,
+                &surface_) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create window surface!");
+            }
+
+            std::cout << "Window surface created." << std::endl;
+        }
 		
         void select_physical_device()
         {
@@ -210,20 +226,38 @@ namespace irglab
         }
 
         void create_logical_device() {
+            auto indices = find_queue_families(physical_device_);
+
+            std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
+            std::set<uint32_t> unique_queue_families = 
+            {
+            	indices.graphics_family.value(),
+            	indices.present_family.value()
+            };
+
+            auto queue_priority = 1.0f;
+            for (auto queue_family : unique_queue_families) {
+                VkDeviceQueueCreateInfo queue_create_info = {};
+                queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+                queue_create_info.queueFamilyIndex = queue_family;
+                queue_create_info.queueCount = 1;
+                queue_create_info.pQueuePriorities = &queue_priority;
+
+            	queue_create_infos.push_back(queue_create_info);
+            }
+        	
             VkDeviceQueueCreateInfo queue_create_info = {};
             queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            auto indices = find_queue_families(physical_device_);
             queue_create_info.queueFamilyIndex = indices.graphics_family.value();
             queue_create_info.queueCount = 1;
-        	auto queue_priority = 1.0f;
             queue_create_info.pQueuePriorities = &queue_priority;
 
             VkPhysicalDeviceFeatures device_features = {};
         	
             VkDeviceCreateInfo create_info = {};
             create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-            create_info.pQueueCreateInfos = &queue_create_info;
-            create_info.queueCreateInfoCount = 1;
+            create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
+            create_info.pQueueCreateInfos = queue_create_infos.data();
             create_info.pEnabledFeatures = &device_features;
 
             create_info.enabledExtensionCount = 0;
@@ -254,6 +288,13 @@ namespace irglab
                 indices.graphics_family.value(),
                 0,
                 &graphics_queue_);
+
+            vkGetDeviceQueue(
+                device_,
+                indices.present_family.value(),
+                0, &present_queue_);
+
+            std::cout << "Device queues created." << std::endl;
         }
 
 
@@ -379,9 +420,10 @@ namespace irglab
         struct queue_family_indices
 		{
             std::optional<uint32_t> graphics_family;
+            std::optional<uint32_t> present_family;
 
             [[nodiscard]] bool is_complete() const {
-                return graphics_family.has_value();
+                return graphics_family.has_value() && present_family.has_value();
             }
         };
 
@@ -404,6 +446,19 @@ namespace irglab
 
             auto i = 0;
             for (const auto& queue_family : queue_families) {
+                VkBool32 present_support = false;
+                if (vkGetPhysicalDeviceSurfaceSupportKHR(
+                    device, i,
+                    surface_,
+                    &present_support) != VK_SUCCESS)
+                {
+                    throw std::runtime_error("Failed to get surface support information.");
+                }
+            	
+                if (present_support) {
+                    indices.present_family = i;
+                }
+            	
                 if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                     indices.graphics_family = i;
                 }
