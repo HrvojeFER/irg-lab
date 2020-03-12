@@ -217,7 +217,6 @@ namespace irglab
                 }
             }
 
-            // ReSharper disable once CppZeroConstantCanBeReplacedWithNullptr
             if (physical_device_ == VK_NULL_HANDLE) {
                 throw std::runtime_error("Failed to find a suitable GPU.");
             }
@@ -317,8 +316,8 @@ namespace irglab
         }
 
         // ReSharper disable once CppMemberFunctionMayBeStatic
-        bool glfw_extensions_supported(
-            const std::vector<const char*>& required_extensions)
+        [[nodiscard]] bool glfw_extensions_supported(
+            const std::vector<const char*>& required_extensions) const
         {
             uint32_t extension_count;
             if (vkEnumerateInstanceExtensionProperties(
@@ -409,8 +408,7 @@ namespace irglab
             create_info.pUserData = nullptr; // Optional
         }
 
-        // ReSharper disable once CppMemberFunctionMayBeStatic
-        bool device_suitable(const VkPhysicalDevice& device)
+        [[nodiscard]] bool device_suitable(const VkPhysicalDevice& device) const
 		{
 			const auto indices = find_queue_families(device);
         	
@@ -427,8 +425,7 @@ namespace irglab
             }
         };
 
-        // ReSharper disable once CppMemberFunctionMayBeStatic
-        queue_family_indices find_queue_families(const VkPhysicalDevice& device)
+        [[nodiscard]] queue_family_indices find_queue_families(const VkPhysicalDevice& device) const
 		{
             queue_family_indices indices;
 
@@ -473,7 +470,7 @@ namespace irglab
             return indices;
         }
 
-		
+
         static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
             VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
             VkDebugUtilsMessageTypeFlagsEXT message_type,
