@@ -34,7 +34,7 @@ namespace irglab
 #else
         const bool enable_validation_layers_ = true;
 #endif
-        const std::vector<const char*> validation_layers_ =
+        const std::array<const char*, 1> validation_layers_ =
         {
             "VK_LAYER_KHRONOS_validation"
         };
@@ -52,6 +52,9 @@ namespace irglab
         VkQueue present_queue_ = VK_NULL_HANDLE;
 
         VkSwapchainKHR swap_chain_ = VK_NULL_HANDLE;
+        VkFormat swap_chain_image_format_ = VK_FORMAT_UNDEFINED;
+        VkExtent2D swap_chain_extent_ {};
+        std::vector<VkImage> swap_chain_images_ {};
 		
         void init_window()
         {
@@ -365,8 +368,30 @@ namespace irglab
             {
                 throw std::runtime_error("Failed to create a swap chain.");
             }
+            swap_chain_image_format_ = surface_format.format;
+            swap_chain_extent_ = extent;
 
             std::cout << "Swap chain created." << std::endl;
+
+        	if (vkGetSwapchainImagesKHR(
+                device_,
+                swap_chain_,
+                &image_count,
+                nullptr) != VK_SUCCESS)
+        	{
+                throw std::runtime_error("Failed to get swap chain images.");
+        	}
+            swap_chain_images_.resize(image_count);
+        	if (vkGetSwapchainImagesKHR(
+                device_,
+                swap_chain_,
+                &image_count,
+                swap_chain_images_.data()) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to get swap chain images.");
+            }
+
+            std::cout << "Swap chain images retrieved." << std::endl;
         }
 		
 
