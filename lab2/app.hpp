@@ -34,7 +34,7 @@ namespace irglab
 #else
         const bool enable_validation_layers_ = true;
 #endif
-        const std::array<const char*, 1> validation_layers_
+        const std::array<const char*, 1> validation_layers_names_
         {
             "VK_LAYER_KHRONOS_validation"
         };
@@ -55,7 +55,7 @@ namespace irglab
 
 		
         VkDevice device_ = VK_NULL_HANDLE;
-        const std::vector<const char*> device_extensions_
+        const std::vector<const char*> device_extension_names_
         { 
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
@@ -74,6 +74,9 @@ namespace irglab
 		VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
         VkPipeline graphics_pipeline_ = VK_NULL_HANDLE;
 
+        VkCommandPool command_pool_ = VK_NULL_HANDLE;
+        std::vector<VkCommandBuffer> command_buffers_{};
+		
 		
         void init_window()
         {
@@ -103,6 +106,8 @@ namespace irglab
             create_render_pass();
             create_graphics_pipeline();
             create_frame_buffers();
+            create_command_pool();
+            create_command_buffers();
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
@@ -111,12 +116,15 @@ namespace irglab
             while (!glfwWindowShouldClose(window_)) 
             {
                 glfwPollEvents();
+                draw_frame();
             }
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
         void cleanup()
     	{
+            vkDestroyCommandPool(device_, command_pool_, nullptr);
+        	
             for (auto framebuffer : swap_chain_framebuffers_) {
                 vkDestroyFramebuffer(device_, framebuffer, nullptr);
             }
@@ -150,6 +158,12 @@ namespace irglab
             glfwTerminate();
         }
 
+
+		void draw_frame()
+        {
+	        
+        }
+		
 		
         void create_instance()
 		{
@@ -182,8 +196,8 @@ namespace irglab
                     throw std::runtime_error("Validation layers not supported.");
                 }
 
-                create_info.enabledLayerCount = static_cast<uint32_t>(validation_layers_.size());
-                create_info.ppEnabledLayerNames = validation_layers_.data();
+                create_info.enabledLayerCount = static_cast<uint32_t>(validation_layers_names_.size());
+                create_info.ppEnabledLayerNames = validation_layers_names_.data();
 
                 populate_debug_messenger_create_info(debug_create_info);
                 create_info.pNext = static_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&debug_create_info);
@@ -305,13 +319,13 @@ namespace irglab
             create_info.pQueueCreateInfos = queue_create_infos.data();
             create_info.pEnabledFeatures = &device_features;
 
-            create_info.enabledExtensionCount = static_cast<uint32_t>(device_extensions_.size());
-            create_info.ppEnabledExtensionNames = device_extensions_.data();
+            create_info.enabledExtensionCount = static_cast<uint32_t>(device_extension_names_.size());
+            create_info.ppEnabledExtensionNames = device_extension_names_.data();
 
             if (enable_validation_layers_)
             {
-                create_info.enabledLayerCount = static_cast<uint32_t>(validation_layers_.size());
-                create_info.ppEnabledLayerNames = validation_layers_.data();
+                create_info.enabledLayerCount = static_cast<uint32_t>(validation_layers_names_.size());
+                create_info.ppEnabledLayerNames = validation_layers_names_.data();
             }
             else
             {
@@ -345,7 +359,7 @@ namespace irglab
 
         void create_swap_chain()
         {
-	        const auto swap_chain_support = query_swap_chain_support(physical_device_);
+	        const auto swap_chain_support = query_swap_chain_support_info(physical_device_);
 
 	        const auto surface_format = select_swap_surface_format(swap_chain_support.formats);
             const auto present_mode = select_swap_present_mode(swap_chain_support.present_modes);
@@ -625,35 +639,35 @@ namespace irglab
 
         void create_render_pass()
         {
-            VkAttachmentDescription color_attachment{};
-            color_attachment.format = swap_chain_image_format_;
-            color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-            color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            VkAttachmentDescription color_attachment_description{};
+            color_attachment_description.format = swap_chain_image_format_;
+            color_attachment_description.samples = VK_SAMPLE_COUNT_1_BIT;
+            color_attachment_description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            color_attachment_description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            color_attachment_description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            color_attachment_description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             // Added because validation layers said to add something.
-            color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            color_attachment_description.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
             VkAttachmentReference color_attachment_ref;
             color_attachment_ref.attachment = 0;
             color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-            VkSubpassDescription subpass{};
-            subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-            subpass.colorAttachmentCount = 1;
-            subpass.pColorAttachments = &color_attachment_ref;
+            VkSubpassDescription subpass_description{};
+            subpass_description.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpass_description.colorAttachmentCount = 1;
+            subpass_description.pColorAttachments = &color_attachment_ref;
 
-            VkRenderPassCreateInfo render_pass_info{};
-            render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-            render_pass_info.attachmentCount = 1;
-            render_pass_info.pAttachments = &color_attachment;
-            render_pass_info.subpassCount = 1;
-            render_pass_info.pSubpasses = &subpass;
+            VkRenderPassCreateInfo render_pass_create_info{};
+            render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+            render_pass_create_info.attachmentCount = 1;
+            render_pass_create_info.pAttachments = &color_attachment_description;
+            render_pass_create_info.subpassCount = 1;
+            render_pass_create_info.pSubpasses = &subpass_description;
 
             if (vkCreateRenderPass(
                 device_,
-                &render_pass_info,
+                &render_pass_create_info,
                 nullptr,
                 &render_pass_) != VK_SUCCESS)
             {
@@ -691,6 +705,105 @@ namespace irglab
 
             std::cout << "Frame buffers created." << std::endl;
         }
+
+		void create_command_pool()
+        {
+            VkCommandPoolCreateInfo command_pool_create_info = {};
+            command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            command_pool_create_info.queueFamilyIndex = queue_family_indices_.graphics_family.value();
+            command_pool_create_info.flags = 0; // Optional
+
+            if (vkCreateCommandPool(
+                device_,
+                &command_pool_create_info,
+                nullptr,
+                &command_pool_) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to create command pool.");
+            }
+
+            std::cout << "Command pool created." << std::endl;
+        }
+
+        void create_command_buffers()
+        {
+            command_buffers_.resize(swap_chain_framebuffers_.size());
+            VkCommandBufferAllocateInfo allocate_info{};
+            allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            allocate_info.commandPool = command_pool_;
+            allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            allocate_info.commandBufferCount = static_cast<uint32_t>(command_buffers_.size());
+
+            if (vkAllocateCommandBuffers(
+                device_,
+                &allocate_info,
+                command_buffers_.data()) != VK_SUCCESS) 
+            {
+                throw std::runtime_error("Failed to allocate command buffers.");
+            }
+
+            std::cout << "Command buffers allocated." << std::endl;
+
+            for (size_t i = 0 ; i < command_buffers_.size() ; ++i)
+            {
+                VkCommandBufferBeginInfo begin_info{};
+                begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+                begin_info.flags = 0; // Optional
+                begin_info.pInheritanceInfo = nullptr; // Optional
+
+                if (vkBeginCommandBuffer(command_buffers_[i], &begin_info) != VK_SUCCESS)
+                {
+                    throw std::runtime_error("Failed to begin recording command buffer.");
+                }
+            	
+                VkRenderPassBeginInfo render_pass_begin_info{};
+                render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+                render_pass_begin_info.renderPass = render_pass_;
+                render_pass_begin_info.framebuffer = swap_chain_framebuffers_[i];
+                render_pass_begin_info.renderArea.offset = { 0, 0 };
+                render_pass_begin_info.renderArea.extent = swap_chain_extent_;
+
+                VkClearValue clear_color
+				{
+				{
+					{
+							0.0f,
+                			0.0f,
+                			0.0f,
+                			1.0f
+						}
+					}
+				};
+                render_pass_begin_info.clearValueCount = 1;
+                render_pass_begin_info.pClearValues = &clear_color;
+
+                vkCmdBeginRenderPass(
+                    command_buffers_[i],
+                    &render_pass_begin_info,
+                    VK_SUBPASS_CONTENTS_INLINE);
+
+                vkCmdBindPipeline(
+                    command_buffers_[i], 
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    graphics_pipeline_);
+
+            	// Add vertex info here
+                vkCmdDraw(
+                    command_buffers_[i],
+                    3,
+                    1,
+                    0,
+                    0);
+
+                vkCmdEndRenderPass(command_buffers_[i]);
+
+                if (vkEndCommandBuffer(command_buffers_[i]) != VK_SUCCESS) {
+                    throw std::runtime_error("Failed to record command buffers.");
+                }
+
+                std::cout << "Command buffer " << i << " recorded." << std::endl;
+            }
+        }
 		
 
         [[nodiscard]] std::vector<const char*> get_required_glfw_extension_names() const
@@ -700,51 +813,52 @@ namespace irglab
             const char** glfw_extensions = 
                 glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
-            std::vector<const char*> extensions(
-                glfw_extensions, 
+            std::vector<const char*> extension_names(glfw_extensions, 
                 glfw_extensions + glfw_extension_count);
 
-            if (enable_validation_layers_) {
-                extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            if (enable_validation_layers_)
+            {
+                extension_names.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             }
 
-            return extensions;
+            return extension_names;
         }
 
         // ReSharper disable once CppMemberFunctionMayBeStatic
         [[nodiscard]] bool glfw_extensions_supported(
-            const std::vector<const char*>& required_extensions) const
+            const std::vector<const char*>& required_extension_names) const
         {
-            unsigned int extension_count;
+            unsigned int available_extension_count;
             if (vkEnumerateInstanceExtensionProperties(
                 nullptr,
-                &extension_count,
+                &available_extension_count,
                 nullptr) != VK_SUCCESS)
             {
                 throw std::runtime_error("Failed to enumerate instance layers.");
             }
 
-            std::vector<VkExtensionProperties> available_extensions(extension_count);
+            std::vector<VkExtensionProperties> available_extensions(available_extension_count);
             if (vkEnumerateInstanceExtensionProperties(nullptr,
-                &extension_count,
+                &available_extension_count,
                 available_extensions.data()) != VK_SUCCESS)
             {
                 throw std::runtime_error("Failed to enumerate instance layers.");
             }
 
-            for (const auto& glfw_extension : required_extensions)
+            for (const auto& required_extension_name : required_extension_names)
             {
-                auto qlfw_extension_found = false;
-                for (const auto& extension : available_extensions)
+                auto required_extension_found = false;
+                for (const auto& available : available_extensions)
                 {
-                    if (strcmp(extension.extensionName, glfw_extension) == 0)
+                	// Check if they are equal
+                    if (strcmp(required_extension_name, available.extensionName) == 0)
                     {
-                        qlfw_extension_found = true;
+                        required_extension_found = true;
                         break;
                     }
                 }
 
-                if (!qlfw_extension_found) return false;
+                if (!required_extension_found) return false;
             }
 
             return  true;
@@ -752,34 +866,37 @@ namespace irglab
 
         [[nodiscard]] bool validation_layers_supported() const
     	{
-            unsigned int layer_count;
-            if (vkEnumerateInstanceLayerProperties(&layer_count, nullptr) != VK_SUCCESS)
+            unsigned int available_layer_count;
+            if (vkEnumerateInstanceLayerProperties(
+                &available_layer_count,
+                nullptr) != VK_SUCCESS)
             {
                 throw std::runtime_error("Failed to enumerate instance layers.");
             }
 
-            std::vector<VkLayerProperties> available_layers(layer_count);
+            std::vector<VkLayerProperties> available_layers(available_layer_count);
             if (vkEnumerateInstanceLayerProperties(
-                &layer_count, 
+                &available_layer_count, 
                 available_layers.data()) != VK_SUCCESS)
             {
                 throw std::runtime_error("Failed to enumerate instance layers.");
             }
 
-        	for (const auto& layer_name : validation_layers_)
+        	for (const auto& required_layer_name : validation_layers_names_)
             {
-                auto layer_found = false;
+                auto required_layer_found = false;
 
-                for (const auto& layer_properties : available_layers)
+                for (const auto& available : available_layers)
                 {
-                    if (strcmp(layer_name, layer_properties.layerName) == 0)
+                	// Check if they are equal
+                    if (strcmp(required_layer_name, available.layerName) == 0)
                     {
-                        layer_found = true;
+                        required_layer_found = true;
                         break;
                     }
                 }
 
-                if (!layer_found) return false;
+                if (!required_layer_found) return false;
             }
 
             return true;
@@ -809,16 +926,17 @@ namespace irglab
             const auto extensions_supported = device_extensions_supported(device);
 
             const auto queue_family_indices = query_queue_families(device);
+            const auto queue_families_supported = queue_family_indices.is_complete();
         	
             auto swap_chain_adequate = false;
             if (extensions_supported) {
-	            const auto swap_chain_support = query_swap_chain_support(device);
+	            const auto swap_chain_support_info = query_swap_chain_support_info(device);
                 swap_chain_adequate = 
-                    !swap_chain_support.formats.empty() && 
-                    !swap_chain_support.present_modes.empty();
+                    !swap_chain_support_info.formats.empty() && 
+                    !swap_chain_support_info.present_modes.empty();
             }
         	
-            return queue_family_indices.is_complete() && extensions_supported && swap_chain_adequate;
+            return queue_families_supported && extensions_supported && swap_chain_adequate;
         }
 
         [[nodiscard]] queue_family_indices query_queue_families(const VkPhysicalDevice& device) const
@@ -839,16 +957,16 @@ namespace irglab
 
             auto i = 0;
             for (const auto& queue_family : queue_families) {
-                VkBool32 present_support = false;
+                VkBool32 present_supported = false;
                 if (vkGetPhysicalDeviceSurfaceSupportKHR(
                     device, i,
                     surface_,
-                    &present_support) != VK_SUCCESS)
+                    &present_supported) != VK_SUCCESS)
                 {
                     throw std::runtime_error("Failed to get surface support information.");
                 }
             	
-                if (present_support) {
+                if (present_supported) {
                     indices.present_family = i;
                 }
             	
@@ -868,52 +986,52 @@ namespace irglab
 
 		[[nodiscard]] bool device_extensions_supported(const VkPhysicalDevice& device) const
         {
-            unsigned int extension_count;
+            unsigned int available_extension_count;
             if (vkEnumerateDeviceExtensionProperties(
                 device,
                 nullptr,
-                &extension_count,
+                &available_extension_count,
                 nullptr) != VK_SUCCESS)
             {
                 throw std::runtime_error("Failed to enumerate device extensions.");
             }
 
-            std::vector<VkExtensionProperties> available_extensions(extension_count);
+            std::vector<VkExtensionProperties> available_extension_names(available_extension_count);
             if (vkEnumerateDeviceExtensionProperties(
                 device,
                 nullptr,
-                &extension_count,
-                available_extensions.data()) != VK_SUCCESS)
+                &available_extension_count,
+                available_extension_names.data()) != VK_SUCCESS)
             {
                 throw std::runtime_error("Failed to enumerate device extensions.");
             }
 
-            std::set<std::string> required_extensions(
-                device_extensions_.begin(),
-                device_extensions_.end());
+            std::set<std::string> required_extension_names(
+                device_extension_names_.begin(),
+                device_extension_names_.end());
 
-            for (const auto& extension : available_extensions) {
-                required_extensions.erase(extension.extensionName);
+            for (const auto& available : available_extension_names) {
+                required_extension_names.erase(available.extensionName);
             }
 
-            return required_extensions.empty();
+            return required_extension_names.empty();
         }
 
-        struct swap_chain_support_details {
+        struct swap_chain_support_info {
             VkSurfaceCapabilitiesKHR capabilities;
             std::vector<VkSurfaceFormatKHR> formats;
             std::vector<VkPresentModeKHR> present_modes;
         };
 
-		[[nodiscard]] swap_chain_support_details query_swap_chain_support(
+		[[nodiscard]] swap_chain_support_info query_swap_chain_support_info(
 			const VkPhysicalDevice& device) const
 		{
-            swap_chain_support_details details = {};
+            swap_chain_support_info support_info = {};
 
             if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
                 device,
                 surface_,
-                &details.capabilities) != VK_SUCCESS)
+                &support_info.capabilities) != VK_SUCCESS)
             {
                 throw std::runtime_error("Failed to get physical device surface capabilities.");
             }
@@ -930,12 +1048,12 @@ namespace irglab
 
             if (format_count > 0) 
             {
-                details.formats.resize(format_count);
+                support_info.formats.resize(format_count);
             	if (vkGetPhysicalDeviceSurfaceFormatsKHR(
                     device,
                     surface_,
                     &format_count,
-                    details.formats.data()) != VK_SUCCESS)
+                    support_info.formats.data()) != VK_SUCCESS)
                 {
                     throw std::runtime_error("Failed to get physical device surface formats.");
                 }
@@ -952,19 +1070,19 @@ namespace irglab
             }
 			
             if (present_mode_count > 0) {
-                details.present_modes.resize(present_mode_count);
+                support_info.present_modes.resize(present_mode_count);
             	if (vkGetPhysicalDeviceSurfacePresentModesKHR(
                     device,
                     surface_,
                     &present_mode_count,
-                    details.present_modes.data()) != VK_SUCCESS)
+                    support_info.present_modes.data()) != VK_SUCCESS)
                 {
                     throw std::runtime_error(
                         "Failed to get physical device surface present modes.");
                 }
             }
 			
-            return details;
+            return support_info;
 		}
 
         // ReSharper disable once CppMemberFunctionMayBeStatic
