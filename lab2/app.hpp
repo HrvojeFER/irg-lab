@@ -76,6 +76,9 @@ namespace irglab
 
         VkCommandPool command_pool_ = VK_NULL_HANDLE;
         std::vector<VkCommandBuffer> command_buffers_{};
+
+        VkSemaphore image_available_semaphore_ = VK_NULL_HANDLE;
+        VkSemaphore render_finished_semaphore_ = VK_NULL_HANDLE;
 		
 		
         void init_window()
@@ -108,6 +111,7 @@ namespace irglab
             create_frame_buffers();
             create_command_pool();
             create_command_buffers();
+            create_semaphores();
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
@@ -123,6 +127,9 @@ namespace irglab
         // ReSharper disable once CppMemberFunctionMayBeConst
         void cleanup()
     	{
+            vkDestroySemaphore(device_, render_finished_semaphore_, nullptr);
+            vkDestroySemaphore(device_, image_available_semaphore_, nullptr);
+        	
             vkDestroyCommandPool(device_, command_pool_, nullptr);
         	
             for (auto framebuffer : swap_chain_framebuffers_) {
@@ -803,6 +810,28 @@ namespace irglab
 
                 std::cout << "Command buffer " << i << " recorded." << std::endl;
             }
+        }
+
+        void create_semaphores()
+		{
+            VkSemaphoreCreateInfo semaphore_create_info{};
+            semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+            if (vkCreateSemaphore(
+					device_,
+					&semaphore_create_info,
+	                nullptr, 
+	                &image_available_semaphore_) != VK_SUCCESS ||
+                vkCreateSemaphore(
+                    device_,
+                    &semaphore_create_info,
+                    nullptr,
+                    &render_finished_semaphore_) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to create semaphores.");
+            }
+
+            std::cout << "Semaphores created." << std::endl;
         }
 		
 
