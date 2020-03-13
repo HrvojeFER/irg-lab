@@ -12,7 +12,7 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-// UINT32_MAX needed
+// UINT32_MAX and UINT64 needed
 #include <cstdint>
 #include <algorithm>
 

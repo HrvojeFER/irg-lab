@@ -77,8 +77,12 @@ namespace irglab
         VkCommandPool command_pool_ = VK_NULL_HANDLE;
         std::vector<VkCommandBuffer> command_buffers_{};
 
-        VkSemaphore image_available_semaphore_ = VK_NULL_HANDLE;
-        VkSemaphore render_finished_semaphore_ = VK_NULL_HANDLE;
+        static const int max_frames_in_flight = 2;
+        size_t current_frame_ = 0;
+		std::array<VkSemaphore, max_frames_in_flight> image_available_semaphores_{};
+        std::array<VkSemaphore, max_frames_in_flight> render_finished_semaphores_{};
+        std::array<VkFence, max_frames_in_flight> in_flight_fences_{};
+		std::vector<VkFence> images_in_flight_{};
 		
 		
         void init_window()
@@ -111,7 +115,7 @@ namespace irglab
             create_frame_buffers();
             create_command_pool();
             create_command_buffers();
-            create_semaphores();
+            create_sync_objects();
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
@@ -122,13 +126,19 @@ namespace irglab
                 glfwPollEvents();
                 draw_frame();
             }
+
+            vkDeviceWaitIdle(device_);
         }
 
         // ReSharper disable once CppMemberFunctionMayBeConst
         void cleanup()
     	{
-            vkDestroySemaphore(device_, render_finished_semaphore_, nullptr);
-            vkDestroySemaphore(device_, image_available_semaphore_, nullptr);
+        	for (size_t i = 0 ; i < max_frames_in_flight ; ++i)
+        	{
+                vkDestroySemaphore(device_, render_finished_semaphores_[i], nullptr);
+                vkDestroySemaphore(device_, image_available_semaphores_[i], nullptr);
+                vkDestroyFence(device_, in_flight_fences_[i], nullptr);
+        	}
         	
             vkDestroyCommandPool(device_, command_pool_, nullptr);
         	
@@ -168,7 +178,87 @@ namespace irglab
 
 		void draw_frame()
         {
-	        
+            vkWaitForFences(
+                device_,
+                1,
+                &in_flight_fences_[current_frame_],
+                VK_TRUE,
+                UINT64_MAX); // Means there is no timeout
+        	
+            unsigned int image_index;
+        	// Add error handling
+            vkAcquireNextImageKHR(
+                device_,
+                swap_chain_,
+                UINT64_MAX, // Means there is no timeout
+                image_available_semaphores_[current_frame_],
+                VK_NULL_HANDLE,
+                &image_index);
+
+            if (images_in_flight_[image_index] != VK_NULL_HANDLE) {
+                vkWaitForFences(
+                    device_,
+                    1,
+                    &images_in_flight_[image_index],
+                    VK_TRUE,
+                    UINT64_MAX);
+            }
+            images_in_flight_[image_index] = in_flight_fences_[current_frame_];
+        	
+            VkSubmitInfo submit_info{};
+            submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+            std::array<VkSemaphore, 1> image_available_semaphores
+        	{
+        		image_available_semaphores_[current_frame_]
+        	};
+            std::array<VkPipelineStageFlags, 1> wait_stages
+        	{
+        		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+        	};
+            submit_info.waitSemaphoreCount = 1;
+            submit_info.pWaitSemaphores = image_available_semaphores.data();
+            submit_info.pWaitDstStageMask = wait_stages.data();
+        	
+            submit_info.commandBufferCount = 1;
+            submit_info.pCommandBuffers = &command_buffers_[image_index];
+
+            std::array<VkSemaphore, 1> render_finished_semaphores
+        	{
+        		render_finished_semaphores_[current_frame_]
+        	};
+            submit_info.signalSemaphoreCount = 1;
+			submit_info.pSignalSemaphores = render_finished_semaphores.data();
+
+        	vkResetFences(
+                device_,
+                1,
+                &in_flight_fences_[current_frame_]);
+            if (vkQueueSubmit(
+                graphics_queue_,
+                1, &submit_info,
+                in_flight_fences_[current_frame_]) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to submit draw command buffer.");
+            }
+
+            VkPresentInfoKHR present_info = {};
+            present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+            present_info.waitSemaphoreCount = 1;
+            present_info.pWaitSemaphores = render_finished_semaphores.data();
+
+        	std::array<VkSwapchainKHR, 1> swap_chains { swap_chain_ };
+            present_info.swapchainCount = 1;
+            present_info.pSwapchains = swap_chains.data();
+            present_info.pImageIndices = &image_index;
+
+            present_info.pResults = nullptr; // Optional
+        	// Add error handling
+            vkQueuePresentKHR(present_queue_, &present_info);
+
+            vkQueueWaitIdle(present_queue_);
+            current_frame_ = (current_frame_ + 1) % max_frames_in_flight;
         }
 		
 		
@@ -665,12 +755,24 @@ namespace irglab
             subpass_description.colorAttachmentCount = 1;
             subpass_description.pColorAttachments = &color_attachment_ref;
 
+        	// Implicit dependencies
+            VkSubpassDependency subpass_dependency = {};
+            subpass_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+            subpass_dependency.dstSubpass = 0;
+            subpass_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            subpass_dependency.srcAccessMask = 0;
+            subpass_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            subpass_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+                | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
             VkRenderPassCreateInfo render_pass_create_info{};
             render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
             render_pass_create_info.attachmentCount = 1;
             render_pass_create_info.pAttachments = &color_attachment_description;
             render_pass_create_info.subpassCount = 1;
             render_pass_create_info.pSubpasses = &subpass_description;
+            render_pass_create_info.dependencyCount = 1;
+            render_pass_create_info.pDependencies = &subpass_dependency;
 
             if (vkCreateRenderPass(
                 device_,
@@ -812,26 +914,40 @@ namespace irglab
             }
         }
 
-        void create_semaphores()
+        void create_sync_objects()
 		{
             VkSemaphoreCreateInfo semaphore_create_info{};
             semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-            if (vkCreateSemaphore(
-					device_,
-					&semaphore_create_info,
-	                nullptr, 
-	                &image_available_semaphore_) != VK_SUCCESS ||
-                vkCreateSemaphore(
-                    device_,
-                    &semaphore_create_info,
-                    nullptr,
-                    &render_finished_semaphore_) != VK_SUCCESS)
-            {
-                throw std::runtime_error("Failed to create semaphores.");
-            }
+            VkFenceCreateInfo fence_info = {};
+            fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+            fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-            std::cout << "Semaphores created." << std::endl;
+            images_in_flight_.resize(swap_chain_images_.size(), VK_NULL_HANDLE);
+
+        	for (size_t i = 0 ; i < max_frames_in_flight ; ++i)
+        	{
+                if (vkCreateSemaphore(
+						device_,
+						&semaphore_create_info,
+						nullptr,
+						&image_available_semaphores_[i]) != VK_SUCCESS ||
+                    vkCreateSemaphore(
+                        device_,
+                        &semaphore_create_info,
+                        nullptr,
+                        &render_finished_semaphores_[i]) != VK_SUCCESS ||
+                    vkCreateFence(
+                        device_,
+                        &fence_info,
+                        nullptr,
+                        &in_flight_fences_[i]) != VK_SUCCESS)
+                {
+                    throw std::runtime_error("Failed to create semaphores.");
+                }
+        	}
+
+            std::cout << "Sync objects created." << std::endl;
         }
 		
 
