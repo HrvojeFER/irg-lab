@@ -10,15 +10,18 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
-#include <cstring>
+
 // UINT32_MAX and UINT64 needed
 #include <cstdint>
-#include <algorithm>
+// strcmp
+#include <cstring>
 
+#include <algorithm>
 #include <vector>
 #include <array>
-#include <set>
+#include <unordered_set>
 #include <map>
 
 
@@ -30,8 +33,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm.hpp"
 
-// Added so RAII can be added later.
-// #include "vulkan/vulkan.hpp"
+#include "vulkan/vulkan.hpp"
 
 
 #endif

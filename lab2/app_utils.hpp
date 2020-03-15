@@ -7,39 +7,30 @@
 
 namespace irglab
 {
-    inline VkResult create_debug_utils_messenger_ext(
-        // ReSharper disable once CppParameterMayBeConst
-        VkInstance instance,
-        const VkDebugUtilsMessengerCreateInfoEXT* p_create_info,
-        const VkAllocationCallbacks* p_allocator,
-        VkDebugUtilsMessengerEXT* p_debug_messenger)
+	template<
+        typename SubsetValueType,
+		typename SupersetValueType,
+		typename SubsetIteratorType,
+		typename SupersetIteratorType,
+		typename PredicateType>
+    bool is_subset(
+        const SubsetIteratorType subset,
+        const SupersetIteratorType superset,
+        PredicateType equality_comparer)
     {
-        const auto func = PFN_vkCreateDebugUtilsMessengerEXT(
-            vkGetInstanceProcAddr(
-                instance,
-                "vkCreateDebugUtilsMessengerEXT")
-        );
-
-        if (func != nullptr)
-        {
-            return func(instance, p_create_info, p_allocator, p_debug_messenger);
-        }
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-
-    inline void destroy_debug_utils_messenger_ext(
-        // ReSharper disable once CppParameterMayBeConst
-        VkInstance instance,
-        // ReSharper disable once CppParameterMayBeConst
-        VkDebugUtilsMessengerEXT debug_messenger,
-        const VkAllocationCallbacks* p_allocator)
-    {
-        const auto func = PFN_vkDestroyDebugUtilsMessengerEXT(
-            vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-
-        if (func != nullptr) {
-            func(instance, debug_messenger, p_allocator);
-        }
+        return std::all_of(
+            subset.begin(),
+            subset.end(),
+            [superset, equality_comparer](SupersetValueType subset_value)
+            {
+                return std::find_if(
+                    superset.begin(),
+                    superset.end(),
+                    [subset_value, equality_comparer](SupersetValueType superset_value)
+                    {
+                        return equality_comparer(subset_value, superset_value);
+                    });
+            });
     }
 
     inline std::vector<char> read_shader_file(const std::string& path)

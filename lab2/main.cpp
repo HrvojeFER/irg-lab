@@ -2,11 +2,10 @@
 
 int main()
 {
-	irglab::app app;
-
-    try 
+    try
     {
-        app.run();
+        irglab::app app;
+	    app.run();
     }
     catch (const std::exception & e) 
     {
