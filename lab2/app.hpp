@@ -180,7 +180,7 @@ namespace irglab
 
 		// Vulkan instance
 #if !defined(NDEBUG)
-        const std::vector<char*> validation_layer_names_
+        const std::vector<std::string> validation_layer_names_
         {
             "VK_LAYER_KHRONOS_validation"
         };
@@ -461,7 +461,7 @@ namespace irglab
             }
         } const queue_family_indices_;
 
-		const std::vector<char*> device_extension_names_
+		const std::vector<std::string> device_extension_names_
         {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
