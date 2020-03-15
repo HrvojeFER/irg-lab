@@ -231,9 +231,9 @@ namespace irglab
             {
                 {},
                 &app_info,
-                static_cast<uint32_t>(layer_names.size()),
+                static_cast<unsigned int>(layer_names.size()),
                 layer_names.data(),
-                static_cast<uint32_t>(extension_names.size()),
+                static_cast<unsigned int>(extension_names.size()),
                 extension_names.data()
             });
 
@@ -561,7 +561,7 @@ namespace irglab
 		{
             const auto queue_family_indices = queue_family_indices_.to_vector();
             const std::vector<const vk::DeviceQueueCreateInfo> queues_create_info(
-                queue_family_indices.size());
+                static_cast<unsigned int>(queue_family_indices.size()));
 
             const auto queue_priority = 1.0f;
             std::transform(
@@ -594,7 +594,7 @@ namespace irglab
             auto result = physical_device_.createDeviceUnique(
             {
                 {},
-                static_cast<uint32_t>(queues_create_info.size()),
+                static_cast<unsigned int>(queues_create_info.size()),
                 queues_create_info.data(),
             	static_cast<unsigned int>(layer_names.size()),
             	layer_names.data(),
@@ -836,7 +836,7 @@ namespace irglab
 	                vk::PipelineBindPoint::eGraphics,
                 	0,
                 	nullptr,
-                	color_attachment_references.size(),
+                    static_cast<unsigned int>(color_attachment_references.size()),
                 	color_attachment_references.data(),
         			nullptr,
         			nullptr,
@@ -863,11 +863,11 @@ namespace irglab
             auto result = device_->createRenderPassUnique(
             {
                 {},
-            	color_attachment_descriptions.size(),
+                static_cast<unsigned int>(color_attachment_descriptions.size()),
                 color_attachment_descriptions.data(),
-            	subpass_descriptions.size(),
+                static_cast<unsigned int>(subpass_descriptions.size()),
             	subpass_descriptions.data(),
-            	subpass_dependencies.size(),
+            	static_cast<unsigned int>(subpass_dependencies.size()),
             	subpass_dependencies.data()
             });
 
@@ -888,9 +888,9 @@ namespace irglab
             auto result = device_->createPipelineLayoutUnique(
             {
                 {},
-            	descriptor_set_layouts.size(),
+                static_cast<unsigned int>(descriptor_set_layouts.size()),
             	descriptor_set_layouts.data(),
-            	push_constant_ranges.size(),
+                static_cast<unsigned int>(push_constant_ranges.size()),
             	push_constant_ranges.data()
             });
 
@@ -952,9 +952,9 @@ namespace irglab
             vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info
             {
                 {},
-            	vertex_input_binding_descriptions.size(),
+                static_cast<unsigned int>(vertex_input_binding_descriptions.size()),
             	vertex_input_binding_descriptions.data(),
-            	vertex_input_attribute_descriptions.size(),
+                static_cast<unsigned int>(vertex_input_attribute_descriptions.size()),
             	vertex_input_attribute_descriptions.data()
             };
 
@@ -990,9 +990,9 @@ namespace irglab
             vk::PipelineViewportStateCreateInfo viewport_state_create_info
             {
                 {},
-            	viewports.size(),
+                static_cast<unsigned int>(viewports.size()),
             	viewports.data(),
-            	scissors.size(),
+                static_cast<unsigned int>(scissors.size()),
             	scissors.data()
             };
 
@@ -1045,7 +1045,7 @@ namespace irglab
             	{},
             	VK_FALSE,
             	vk::LogicOp::eCopy,
-            	color_blend_attachment_states.size(),
+                static_cast<unsigned int>(color_blend_attachment_states.size()),
             	color_blend_attachment_states.data(),
             	std::array<float, 4>
             	{
@@ -1059,7 +1059,7 @@ namespace irglab
             auto result = device_->createGraphicsPipelineUnique(nullptr,
             {
                 {},
-            	shader_stages_create_info.size(),
+                static_cast<unsigned int>(shader_stages_create_info.size()),
             	shader_stages_create_info.data(),
             	&vertex_input_state_create_info,
             	&input_assembly_state_create_info,
@@ -1102,7 +1102,7 @@ namespace irglab
                     {
                         {},
                         render_pass_.get(),
-                        attachments.size(),
+                        static_cast<unsigned int>(attachments.size()),
                         attachments.data(),
                         swapchain_configuration_.extent.width,
                         swapchain_configuration_.extent.height,
@@ -1144,7 +1144,7 @@ namespace irglab
             {
                 command_pool_.get(),
                 vk::CommandBufferLevel::ePrimary,
-                command_buffers.size()
+                static_cast<unsigned int>(command_buffers.size())
             });
 
             for (size_t i = 0 ; i < command_buffers.size() ; ++i)
@@ -1187,7 +1187,7 @@ namespace irglab
                         { 0, 0 },
                         swapchain_configuration_.extent
                     },
-                    clear_values.size(),
+                    static_cast<unsigned int>(clear_values.size()),
                 	clear_values.data()
                 };
 
