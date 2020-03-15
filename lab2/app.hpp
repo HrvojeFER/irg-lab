@@ -25,7 +25,7 @@ namespace irglab
             window_(create_window(), window_deleter_),
             instance_(create_instance()),
 #if !defined(NDEBUG)
-			debug_utils_messenger_(create_debug_messenger()),
+			debug_utils_messenger_(create_debug_messenger(), debug_utils_messenger_deleter_),
 #endif
 			surface_(create_surface()),
 			physical_device_(select_physical_device()),
@@ -209,12 +209,12 @@ namespace irglab
                 required_glfw_extension_names.end());
 
 #if !defined(NDEBUG)
-            layer_names.insert(
-                layer_names.end(),
-                validation_layer_names_.begin(),
-                validation_layer_names_.end());
+            for (const auto& validation_layer_name : validation_layer_names_)
+            {
+                layer_names.push_back(const_cast<char*>(validation_layer_name.c_str()));
+            }
 
-            extension_names.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            extension_names.push_back(const_cast<char*>(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
 #endif
 
             if (!extensions_supported(extension_names))
@@ -246,14 +246,14 @@ namespace irglab
         {
             unsigned int glfw_extension_count = 0;
             // ReSharper disable once CppUseAuto
-            const char** glfw_extensions =
+            const char** glfw_extension_names =
                 glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
-            std::vector<char*> extension_names
+            std::vector<char*> extension_names;
+        	for (unsigned int i = 0 ; i < glfw_extension_count ; ++i)
         	{
-        		glfw_extensions,
-                glfw_extensions + glfw_extension_count
-        	};
+                extension_names.push_back(const_cast<char*>(*(glfw_extension_names + i)));
+        	}
 
             return extension_names;
         }
@@ -261,65 +261,109 @@ namespace irglab
         [[nodiscard]] static bool extensions_supported(
             const std::vector<char*>& required_extension_names)
         {
-            return irglab::is_subset<char*, vk::LayerProperties>(
-                required_extension_names,
-                vk::enumerateInstanceExtensionProperties(),
-                [](const char*& required_layer_name, vk::LayerProperties& available)
+            auto available_extension_properties = 
+                vk::enumerateInstanceExtensionProperties();
+
+        	for (auto required_extension_name : required_extension_names)
+            {
+                auto found = false;
+                for (auto available : available_extension_properties)
                 {
-                    return strcmp(required_layer_name, available.layerName) == 0;
-                });
+                    if (strcmp(required_extension_name, available.extensionName) == 0)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) return false;
+            }
+
+            return true;
         }
 
         [[nodiscard]] static bool layers_supported(
             const std::vector<char*>& required_layer_names)
         {
-            return irglab::is_subset<char*, vk::LayerProperties>(
-                required_layer_names,
-                vk::enumerateInstanceLayerProperties(),
-                [](const char*& required_layer_name, const vk::LayerProperties& available)
+            auto available_layer_properties = 
+                vk::enumerateInstanceLayerProperties();
+
+            for (auto required_layer_name : required_layer_names)
+            {
+                auto found = false;
+                for (auto available : available_layer_properties)
                 {
-                    return strcmp(required_layer_name, available.layerName) == 0;
-                });
+                    if (strcmp(required_layer_name, available.layerName) == 0)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) return false;
+            }
+
+            return true;
         }
 
-
+		
 		// Debug messenger
 #if !defined(NDEBUG)
-        const vk::UniqueDebugUtilsMessengerEXT debug_utils_messenger_;
+        using debug_messenger_deleter_type = std::function<void(VkDebugUtilsMessengerEXT*)>;
+        using debug_messenger_type = std::unique_ptr<
+            VkDebugUtilsMessengerEXT,
+			debug_messenger_deleter_type>;
+        const debug_messenger_type debug_utils_messenger_;
 
-        [[nodiscard]] vk::UniqueDebugUtilsMessengerEXT create_debug_messenger() const
+        [[nodiscard]] VkDebugUtilsMessengerEXT* create_debug_messenger() const
         {
-            if (!reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-                instance_->getProcAddr("vkCreateDebugUtilsMessengerEXT")))
+            VkDebugUtilsMessengerCreateInfoEXT create_info
             {
-                throw std::runtime_error("Failed to find debug messenger creator.");
-            }
-
-            if (!reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-                instance_->getProcAddr("vkDestroyDebugUtilsMessengerEXT")))
-            {
-                throw std::runtime_error("Failed to find debug messenger deleter.");
-            }
-
-            auto result = instance_->createDebugUtilsMessengerEXTUnique(
-            {
-                {},
-                vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
-                | vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
-                | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
-                vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-                | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+                nullptr,
+				{},
+            	VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+                | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+                VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
                 // For now, performance messages are disabled.
                 // | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
                 ,
-                &debug_callback,
-                {}
-            });
+            	&debug_callback,
+            	nullptr
+            };
 
-            std::cout << "Debug messenger created." << std::endl;
+        	const auto create_function = PFN_vkCreateDebugUtilsMessengerEXT(
+                instance_->getProcAddr("vkCreateDebugUtilsMessengerEXT")
+            );
 
-            return result;
+            if (create_function != nullptr)
+            {
+                VkDebugUtilsMessengerEXT debug_messenger;
+                if (create_function(
+                    instance_.get(),
+                    &create_info, 
+                    nullptr,
+                    &debug_messenger) == VK_SUCCESS)
+                {
+                    return &debug_messenger;
+                }
+            }
+
+            throw std::runtime_error("Failed initializing debug messenger.");
         }
+
+        std::function<void(VkDebugUtilsMessengerEXT*)> debug_utils_messenger_deleter_ = 
+            [this](VkDebugUtilsMessengerEXT* debug_messenger)
+        {
+            const auto destroy_function = PFN_vkDestroyDebugUtilsMessengerEXT(
+                instance_->getProcAddr("vkDestroyDebugUtilsMessengerEXT"));
+
+            if (destroy_function != nullptr) {
+                destroy_function(instance_.get(), *debug_messenger, nullptr);
+            }
+        };
 		
         static vk::Bool32 debug_callback(
             VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
@@ -447,13 +491,12 @@ namespace irglab
 
 			[[nodiscard]] bool are_all_unique() const
             {
-                return to_vector().size() == to_unordered_set().size();
+                return graphics_family.value() != present_family.value();
             }
 
-		private:
-            [[nodiscard]] std::unordered_set<unsigned int> to_unordered_set() const
+			[[nodiscard]] std::unordered_set<unsigned int> to_unordered_set() const
             {
-                return std::unordered_set<unsigned int>
+                return
                 {
                     graphics_family.value(),
                     present_family.value()
@@ -496,15 +539,25 @@ namespace irglab
 
         [[nodiscard]] bool device_extensions_supported(const vk::PhysicalDevice& device) const
         {
-            return irglab::is_subset<char*, vk::ExtensionProperties>(
-                device_extension_names_,
-                device.enumerateDeviceExtensionProperties(),
-                [](
-                    const char*& required_extension_name,
-                    const vk::ExtensionProperties& available)
-                {
-                    return strcmp(required_extension_name, available.extensionName) == 0;
-                });
+            auto available_extension_properties = 
+                device.enumerateDeviceExtensionProperties();
+
+            for (const auto& device_extension_name : device_extension_names_)
+            {
+                auto found = false;
+	            for (auto available : available_extension_properties)
+	            {
+		            if (strcmp(device_extension_name.c_str(), available.extensionName) == 0)
+		            {
+                        found = true;
+                        break;
+		            }
+	            }
+
+                if (!found) return false;
+            }
+        	
+            return true;
         }
 
         [[nodiscard]] queue_family_indices query_queue_families(const vk::PhysicalDevice& device) const
@@ -559,36 +612,30 @@ namespace irglab
 		
         [[nodiscard]] vk::UniqueDevice create_logical_device() const
 		{
-            const auto queue_family_indices = queue_family_indices_.to_vector();
-            const std::vector<vk::DeviceQueueCreateInfo> queues_create_info(
-                static_cast<unsigned int>(queue_family_indices.size()));
+            std::vector<vk::DeviceQueueCreateInfo> queues_create_info{};
 
             const auto queue_priority = 1.0f;
-            std::transform(
-                queue_family_indices.begin(),
-                queue_family_indices.end(),
-                queues_create_info.begin(),
-                [queue_priority](const unsigned int& queue_family_index)
+            for (auto unique_queue_family_index : queue_family_indices_.to_unordered_set())
+            {
+                queues_create_info.push_back(
+                vk::DeviceQueueCreateInfo
                 {
-                    return vk::DeviceQueueCreateInfo
-                    {
-                        {},
-                        queue_family_index,
-                        1,
-                        &queue_priority
-                    };
-                }
-            );
+                    {},
+                	unique_queue_family_index,
+                	1,
+                	&queue_priority
+                });
+            }
         	
             std::vector<char*> extension_names{};
             std::vector<char*> layer_names{};
             vk::PhysicalDeviceFeatures features{};
         	
 #if !defined(NDEBUG)
-            layer_names.insert(
-                layer_names.end(),
-                validation_layer_names_.begin(),
-                validation_layer_names_.end());
+        	for (const auto& validation_layer_name : validation_layer_names_)
+        	{
+                layer_names.push_back(const_cast<char*>(validation_layer_name.c_str()));
+        	}
 #endif
         	
             auto result = physical_device_.createDeviceUnique(
@@ -726,15 +773,6 @@ namespace irglab
 
         [[nodiscard]] vk::UniqueSwapchainKHR create_swapchain() const
         {
-            auto image_sharing_mode = vk::SharingMode::eExclusive;
-            std::vector<unsigned int> queue_family_indices{};
-
-        	if (queue_family_indices_.are_all_unique())
-        	{
-                image_sharing_mode = vk::SharingMode::eConcurrent;
-                queue_family_indices = queue_family_indices_.to_vector();
-        	}
-        	
             auto result = device_->createSwapchainKHRUnique(
             {
                 {},
@@ -745,9 +783,12 @@ namespace irglab
                 swapchain_configuration_.extent,
                 0,
                 vk::ImageUsageFlagBits::eColorAttachment,
-                image_sharing_mode,
-                static_cast<unsigned int>(queue_family_indices.size()),
-                queue_family_indices.data(),
+                queue_family_indices_.are_all_unique() ? 
+                    vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
+				queue_family_indices_.are_all_unique() ? 
+					static_cast<unsigned int>(queue_family_indices_.to_vector().size()) : 0,
+                queue_family_indices_.are_all_unique() ? 
+					queue_family_indices_.to_vector().data() : nullptr,
                 swapchain_configuration_.transform_flag_bit,
                 vk::CompositeAlphaFlagBitsKHR::eOpaque,
                 swapchain_configuration_.present_mode,
@@ -770,7 +811,7 @@ namespace irglab
         	
             for (const auto image : device_.get().getSwapchainImagesKHR(swapchain_.get()))
             {
-                image_views.emplace_back(device_->createImageViewUnique(
+                image_views.push_back(device_->createImageViewUnique(
                 {
                     {},
                     image,
@@ -1090,26 +1131,22 @@ namespace irglab
         {
             std::vector<vk::UniqueFramebuffer> framebuffers;
 
-            std::transform(
-                image_views_.begin(), 
-                image_views_.end(), 
-                framebuffers.begin(),
-                [this](vk::UniqueImageView image_view)
+            for (const auto& image_view : image_views_)
+            {
+                std::vector<vk::ImageView> attachments{image_view.get() };
+
+                framebuffers.push_back(device_->createFramebufferUnique(
                 {
-                    std::vector<vk::ImageView> attachments{ image_view.get() };
-
-                    return device_->createFramebufferUnique(
-                    {
-                        {},
-                        render_pass_.get(),
-                        static_cast<unsigned int>(attachments.size()),
-                        attachments.data(),
-                        swapchain_configuration_.extent.width,
-                        swapchain_configuration_.extent.height,
-                        1
-                    });
-                });
-
+                    {},
+                    render_pass_.get(),
+                    static_cast<unsigned int>(attachments.size()),
+                    attachments.data(),
+                    swapchain_configuration_.extent.width,
+                    swapchain_configuration_.extent.height,
+                    1
+                }));
+			}
+        	
             std::cout << "Framebuffers created." << std::endl;
 
             return framebuffers;
@@ -1134,17 +1171,15 @@ namespace irglab
 
 
 		// Command buffers
-        std::vector<vk::UniqueCommandBuffer> command_buffers_{};
+        std::vector<vk::UniqueCommandBuffer> command_buffers_;
 
         [[nodiscard]] std::vector<vk::UniqueCommandBuffer> create_command_buffers() const
         {
-            const std::vector<vk::UniqueCommandBuffer> command_buffers(framebuffers_.size());
-        	
-            device_->allocateCommandBuffersUnique(
+	        auto command_buffers = device_->allocateCommandBuffersUnique(
             {
                 command_pool_.get(),
                 vk::CommandBufferLevel::ePrimary,
-                static_cast<unsigned int>(command_buffers.size())
+                static_cast<unsigned int>(framebuffers_.size())
             });
 
             for (size_t i = 0 ; i < command_buffers.size() ; ++i)
