@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <utility>
+
+
 #include "pch.hpp"
 
 #include "app_utils.hpp"
@@ -42,29 +45,40 @@ namespace irglab
             fragment_shader_module_(create_shader_module(compiled_shader_paths.fragment)),
 			graphics_pipeline_(create_graphics_pipeline()),
 			framebuffers_(create_frame_buffers()),
-			command_buffers_(create_command_buffers()),
-			sync_objects_(create_sync_objects()) { }
+			command_pool_(create_command_pool()),
+			command_buffers_(create_command_buffers())
+			//sync_(create_sync_objects())
+        {
+        	// Exit with ESCAPE
+            glfwSetKeyCallback(window_.get(), 
+                [](GLFWwindow* window, int key, int scan_code, int action, int mods)
+            {
+                if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+                    glfwSetWindowShouldClose(window, GL_TRUE);
+            });
+        }
 
         void run()
     	{
             while (!glfwWindowShouldClose(window_.get()))
             {
                 glfwPollEvents();
-                draw_frame();
+                // draw_frame();
             }
 
-            vkDeviceWaitIdle(device_.get());
+            device_.get().waitIdle();
         }
     private:
 		// Draw command
+		/*
         static const int max_frames_in_flight = 2;
         size_t current_frame_ = 0;
 		
         void draw_frame()
         {
             if (device_->waitForFences(
-                sync_objects_.in_flight_fences.size(),
-                &sync_objects_.in_flight_fences.at(current_frame_).get(),
+                1,
+                &sync_->frames_in_flight[current_frame_],
                 VK_TRUE,
                 UINT64_MAX) // Means there is no timeout
                 != vk::Result::eSuccess)
@@ -76,22 +90,21 @@ namespace irglab
             auto image_index = device_->acquireNextImageKHR(
 	            swapchain_.get(),
 	            UINT64_MAX,
-	            sync_objects_.image_available_semaphores[current_frame_].get(),
+                sync_->image_available_semaphores[current_frame_],
 	            nullptr).value;
 
-            if (sync_objects_.images_in_flight[image_index].has_value()) {
-                if (device_->waitForFences(
-                    sync_objects_.in_flight_fences.size(),
-                    &sync_objects_.images_in_flight[image_index].value().get(),
-                    VK_TRUE,
-                    UINT64_MAX) != vk::Result::eSuccess)
-                {
-                    std::cerr << "Failed waiting for in flight image fence." << std::endl;
-                    return;
-                }
+            if (device_->waitForFences(
+                1,
+                &sync_->images_in_flight[image_index],
+                VK_TRUE,
+                UINT64_MAX) != vk::Result::eSuccess)
+            {
+                std::cerr << "Failed waiting for in flight image fence." << std::endl;
+                return;
             }
-            sync_objects_.images_in_flight[image_index].value().get() = 
-                sync_objects_.in_flight_fences[current_frame_].get();
+
+            sync_->images_in_flight[image_index] =
+                sync_->frames_in_flight[current_frame_];
 
         	
             std::array<vk::PipelineStageFlags, 1> wait_stages
@@ -101,15 +114,15 @@ namespace irglab
             vk::SubmitInfo submit_info
         	{
         		1,
-                &sync_objects_.image_available_semaphores[current_frame_].get(),
+                &sync_->image_available_semaphores[current_frame_],
         		wait_stages.data(),
         		1,
                 &command_buffers_[image_index].get(),
         		1,
-                &sync_objects_.render_finished_semaphores[current_frame_].get()
+                &sync_->render_finished_semaphores[current_frame_]
         	};
 
-            if (device_->resetFences(1, &sync_objects_.in_flight_fences[current_frame_].get())
+            if (device_->resetFences(1, &sync_->frames_in_flight[current_frame_])
                 != vk::Result::eSuccess)
             {
                 std::cerr << "Failed to reset fences." << std::endl;
@@ -119,7 +132,7 @@ namespace irglab
             if (graphics_queue_.submit(
                 1,
                 &submit_info,
-                sync_objects_.in_flight_fences[current_frame_].get()) != vk::Result::eSuccess)
+                sync_->frames_in_flight[current_frame_]) != vk::Result::eSuccess)
             {
                 throw std::runtime_error("Failed to submit draw command buffer.");
             }
@@ -127,7 +140,7 @@ namespace irglab
             present_queue_.presentKHR(
             {
             	1,
-            	&sync_objects_.render_finished_semaphores[current_frame_].get(),
+            	&sync_->render_finished_semaphores[current_frame_],
             	1,
             	&swapchain_.get(),
             	&image_index,
@@ -137,6 +150,7 @@ namespace irglab
             vkQueueWaitIdle(present_queue_);
             current_frame_ = (current_frame_ + 1) % max_frames_in_flight;
         }
+        */
 
 
 		// Start of objects and handles
@@ -180,7 +194,7 @@ namespace irglab
 
 		// Vulkan instance
 #if !defined(NDEBUG)
-        const std::vector<std::string> validation_layer_names_
+        const std::array<std::string, 1> validation_layer_names_
         {
             "VK_LAYER_KHRONOS_validation"
         };
@@ -463,11 +477,16 @@ namespace irglab
 
             std::cout << "Surface created." << std::endl;
 
-            return vk::UniqueSurfaceKHR { inner_surface };
+            return vk::UniqueSurfaceKHR { inner_surface, instance_.get() };
         }
 
+		
+        // Physical device
+		const std::array<std::string, 1> required_device_extension_names_
+        {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
 
-		// Physical device
         const vk::PhysicalDevice physical_device_;
 
 		struct queue_family_indices
@@ -504,11 +523,6 @@ namespace irglab
             }
         } const queue_family_indices_;
 
-		const std::vector<std::string> device_extension_names_
-        {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
-        };
-
         [[nodiscard]] vk::PhysicalDevice select_physical_device() const
         {
             auto devices = instance_->enumeratePhysicalDevices();
@@ -542,12 +556,12 @@ namespace irglab
             auto available_extension_properties = 
                 device.enumerateDeviceExtensionProperties();
 
-            for (const auto& device_extension_name : device_extension_names_)
+            for (const auto& required_extension_name : required_device_extension_names_)
             {
                 auto found = false;
 	            for (auto available : available_extension_properties)
 	            {
-		            if (strcmp(device_extension_name.c_str(), available.extensionName) == 0)
+		            if (strcmp(required_extension_name.c_str(), available.extensionName) == 0)
 		            {
                         found = true;
                         break;
@@ -630,6 +644,11 @@ namespace irglab
             std::vector<char*> extension_names{};
             std::vector<char*> layer_names{};
             vk::PhysicalDeviceFeatures features{};
+
+            for (const auto& device_extension_name : required_device_extension_names_)
+            {
+                extension_names.push_back(const_cast<char*>(device_extension_name.c_str()));
+            }
         	
 #if !defined(NDEBUG)
         	for (const auto& validation_layer_name : validation_layer_names_)
@@ -781,7 +800,7 @@ namespace irglab
                 swapchain_configuration_.format,
                 swapchain_configuration_.color_space,
                 swapchain_configuration_.extent,
-                0,
+                1,
                 vk::ImageUsageFlagBits::eColorAttachment,
                 queue_family_indices_.are_all_unique() ? 
                     vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
@@ -1175,12 +1194,16 @@ namespace irglab
 
         [[nodiscard]] std::vector<vk::UniqueCommandBuffer> create_command_buffers() const
         {
-	        auto command_buffers = device_->allocateCommandBuffersUnique(
-            {
-                command_pool_.get(),
-                vk::CommandBufferLevel::ePrimary,
-                static_cast<unsigned int>(framebuffers_.size())
-            });
+            auto command_buffers
+			{
+            	device_->allocateCommandBuffersUnique(
+		            vk::CommandBufferAllocateInfo
+					{
+		                command_pool_.get(),
+		                vk::CommandBufferLevel::ePrimary,
+		                static_cast<unsigned int>(framebuffers_.size())
+					})
+			};
 
             for (size_t i = 0 ; i < command_buffers.size() ; ++i)
             {
@@ -1241,18 +1264,52 @@ namespace irglab
             return command_buffers;
         }
 
-		
+		/*
 		// Sync objects
         struct sync_objects {
-            std::array<vk::UniqueSemaphore, max_frames_in_flight> image_available_semaphores{};
-            std::array<vk::UniqueSemaphore, max_frames_in_flight> render_finished_semaphores{};
-            std::array<vk::UniqueFence, max_frames_in_flight> in_flight_fences{};
-            std::vector<std::optional<vk::UniqueFence>> images_in_flight{};
-        } sync_objects_;
+            std::array<vk::Semaphore, max_frames_in_flight> image_available_semaphores{};
+            std::array<vk::Semaphore, max_frames_in_flight> render_finished_semaphores{};
+            std::array<vk::Fence, max_frames_in_flight> frames_in_flight{};
+            std::vector<vk::Fence>images_in_flight{};
 
-        [[nodiscard]] sync_objects create_sync_objects() const
+            std::function<void(vk::Fence)> destroy_fence{};
+            std::function<void(vk::Semaphore)> destroy_semaphore{};
+
+        	sync_objects(
+	            std::function<void(vk::Fence)> destroy_fence,
+                std::function<void(vk::Semaphore)> destroy_semaphore) :
+                destroy_fence(std::move(destroy_fence)),
+        		destroy_semaphore(std::move(destroy_semaphore)) { }
+
+			~sync_objects()
+			{
+                for (size_t i = 0; i < max_frames_in_flight; ++i)
+                {
+                    destroy_semaphore(image_available_semaphores[i]);
+                    destroy_semaphore(render_finished_semaphores[i]);
+                    destroy_fence(frames_in_flight[i]);
+                }
+
+				for (const auto& fence : images_in_flight)
+				{
+                    destroy_fence(fence);
+				}
+			}
+        };
+
+        std::unique_ptr<sync_objects> sync_;
+
+        [[nodiscard]] std::unique_ptr<sync_objects> create_sync_objects() const
 		{
-            sync_objects sync_objects;
+            auto destroy_semaphore = [this](const vk::Semaphore semaphore)
+            {
+                device_->destroySemaphore(semaphore);
+            };
+        	auto destroy_fence = [this](const vk::Fence fence)
+            {
+                device_->destroyFence(fence);
+            };
+            auto sync = std::make_unique<sync_objects>(destroy_fence, destroy_semaphore);
         	
 			const vk::SemaphoreCreateInfo semaphore_create_info{};
             const vk::FenceCreateInfo fence_create_info
@@ -1260,21 +1317,28 @@ namespace irglab
             	vk::FenceCreateFlagBits::eSignaled
             };
         	
-            sync_objects.images_in_flight.resize(image_views_.size());
+            sync->images_in_flight.resize(image_views_.size());
 
         	for (size_t i = 0 ; i < max_frames_in_flight ; ++i)
         	{
-                sync_objects.image_available_semaphores[i] = 
-                    device_->createSemaphoreUnique(semaphore_create_info);
-                sync_objects.render_finished_semaphores[i] = 
-                    device_->createSemaphoreUnique(semaphore_create_info);
-                sync_objects.in_flight_fences[i] = device_->createFenceUnique(fence_create_info);
+                sync->image_available_semaphores[i] =
+					device_->createSemaphore(semaphore_create_info);
+                sync->render_finished_semaphores[i] =
+                    device_->createSemaphore(semaphore_create_info);
+                sync->frames_in_flight[i] = device_->createFence(fence_create_info);
+        	}
+
+            sync->images_in_flight.resize(swapchain_configuration_.image_count);
+        	for (size_t i = 0 ; i < swapchain_configuration_.image_count ; ++i)
+        	{
+                sync->images_in_flight[i] = device_->createFence(fence_create_info);
         	}
 
             std::cout << "Sync objects created." << std::endl;
 
-            return sync_objects;
+            return sync;
         }
+		*/
     };
 }
 

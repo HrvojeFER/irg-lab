@@ -23,6 +23,7 @@
 #include <array>
 #include <unordered_set>
 #include <map>
+#include <list>
 
 
 // GLFW includes Vulkan with the following macro.
