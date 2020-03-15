@@ -180,7 +180,7 @@ namespace irglab
 
 		// Vulkan instance
 #if !defined(NDEBUG)
-        const std::vector<const char*> validation_layer_names_
+        const std::vector<char*> validation_layer_names_
         {
             "VK_LAYER_KHRONOS_validation"
         };
@@ -199,8 +199,8 @@ namespace irglab
                 VK_API_VERSION_1_2
             };
 
-            std::vector<const char*> extension_names{};
-            std::vector<const char*> layer_names{};
+            std::vector<char*> extension_names{};
+            std::vector<char*> layer_names{};
 
             auto required_glfw_extension_names = get_required_glfw_extension_names();
             extension_names.insert(
@@ -242,14 +242,14 @@ namespace irglab
             return result;
         }
 
-        [[nodiscard]] static std::vector<const char*> get_required_glfw_extension_names()
+        [[nodiscard]] static std::vector<char*> get_required_glfw_extension_names()
         {
             unsigned int glfw_extension_count = 0;
             // ReSharper disable once CppUseAuto
             const char** glfw_extensions =
                 glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
-            std::vector<const char*> extension_names
+            std::vector<char*> extension_names
         	{
         		glfw_extensions,
                 glfw_extensions + glfw_extension_count
@@ -259,7 +259,7 @@ namespace irglab
         }
 
         [[nodiscard]] static bool extensions_supported(
-            const std::vector<const char*>& required_extension_names)
+            const std::vector<char*>& required_extension_names)
         {
             return irglab::is_subset<char*, vk::LayerProperties>(
                 required_extension_names,
@@ -271,7 +271,7 @@ namespace irglab
         }
 
         [[nodiscard]] static bool layers_supported(
-            const std::vector<const char*>& required_layer_names)
+            const std::vector<char*>& required_layer_names)
         {
             return irglab::is_subset<char*, vk::LayerProperties>(
                 required_layer_names,
@@ -461,7 +461,7 @@ namespace irglab
             }
         } const queue_family_indices_;
 
-		const std::vector<const char*> device_extension_names_
+		const std::vector<char*> device_extension_names_
         {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
@@ -560,7 +560,7 @@ namespace irglab
         [[nodiscard]] vk::UniqueDevice create_logical_device() const
 		{
             const auto queue_family_indices = queue_family_indices_.to_vector();
-            const std::vector<const vk::DeviceQueueCreateInfo> queues_create_info(
+            const std::vector<vk::DeviceQueueCreateInfo> queues_create_info(
                 static_cast<unsigned int>(queue_family_indices.size()));
 
             const auto queue_priority = 1.0f;
@@ -580,8 +580,8 @@ namespace irglab
                 }
             );
         	
-            std::vector<const char*> extension_names{};
-            std::vector<const char*> layer_names{};
+            std::vector<char*> extension_names{};
+            std::vector<char*> layer_names{};
             vk::PhysicalDeviceFeatures features{};
         	
 #if !defined(NDEBUG)
@@ -762,11 +762,11 @@ namespace irglab
 
 
 		// Image views
-        const std::vector<const vk::UniqueImageView> image_views_;
+        const std::vector<vk::UniqueImageView> image_views_;
 
-        [[nodiscard]] std::vector<const vk::UniqueImageView> create_image_views() const
+        [[nodiscard]] std::vector<vk::UniqueImageView> create_image_views() const
         {
-            std::vector<const vk::UniqueImageView> image_views{};
+            std::vector<vk::UniqueImageView> image_views{};
         	
             for (const auto image : device_.get().getSwapchainImagesKHR(swapchain_.get()))
             {
@@ -912,7 +912,7 @@ namespace irglab
                 {
                     {},
                     code.size(),
-                    reinterpret_cast<const uint32_t*>(code.data())
+                    reinterpret_cast<const unsigned int*>(code.data())
                 });
 
             std::cout << "Shader modules created." << std::endl;
