@@ -189,8 +189,9 @@ xcopy "$(ProjectDir)spirv" "$(OutputPath)spirv" /Y</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app_safe.hpp" />
+    <ClInclude Include="app_safe_testing.hpp" />
     <ClInclude Include="app_unsafe.hpp" />
-    <ClInclude Include="app_utils.hpp" />
+    <ClInclude Include="assets.hpp" />
     <ClInclude Include="main_unsafe.hpp" />
     <ClInclude Include="pch.hpp" />
   </ItemGroup>

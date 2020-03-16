@@ -4,6 +4,7 @@
 #pragma once
 
 #include "app_safe.hpp"
+#include "app_safe_testing.hpp"
 
 namespace irglab
 {
@@ -11,7 +12,7 @@ namespace irglab
     {
         try
         {
-            const app_safe app;
+            const app_safe_testing app;
             app.run();
         }
         catch (const std::exception & e)

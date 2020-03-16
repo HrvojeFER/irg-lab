@@ -6,7 +6,7 @@
 
 #include "pch.hpp"
 
-#include "app_utils.hpp"
+#include "assets.hpp"
 
 namespace irglab
 {
