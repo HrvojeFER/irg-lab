@@ -3,28 +3,15 @@
 
 #pragma once
 
-#include <utility>
-
-
 #include "pch.hpp"
 
 #include "app_utils.hpp"
 
 namespace irglab
 {
-    struct compiled_shader_paths
-    {
-        std::string vertex;
-        std::string fragment;
-    } const compiled_shader_paths
-	{
-        "./spirv/vertex_shader.spirv",
-        "./spirv/fragment_shader.spirv"
-    };
-
-	class app {
+	class app_safe {
     public:
-        app() :
+        app_safe() :
             window_(create_window(), window_deleter_),
             instance_(create_instance()),
 #if !defined(NDEBUG)
@@ -46,8 +33,8 @@ namespace irglab
 			graphics_pipeline_(create_graphics_pipeline()),
 			framebuffers_(create_frame_buffers()),
 			command_pool_(create_command_pool()),
-			command_buffers_(create_command_buffers())
-			//sync_(create_sync_objects())
+			command_buffers_(create_command_buffers()),
+			sync_(create_sync_objects())
         {
         	// Exit with ESCAPE
             glfwSetKeyCallback(window_.get(), 
@@ -58,8 +45,8 @@ namespace irglab
             });
         }
 
-        void run()
-    	{
+        void run() const
+        {
             while (!glfwWindowShouldClose(window_.get()))
             {
                 glfwPollEvents();
@@ -70,7 +57,6 @@ namespace irglab
         }
     private:
 		// Draw command
-		/*
         static const int max_frames_in_flight = 2;
         size_t current_frame_ = 0;
 		
@@ -150,7 +136,6 @@ namespace irglab
             vkQueueWaitIdle(present_queue_);
             current_frame_ = (current_frame_ + 1) % max_frames_in_flight;
         }
-        */
 
 
 		// Start of objects and handles
@@ -1264,7 +1249,6 @@ namespace irglab
             return command_buffers;
         }
 
-		/*
 		// Sync objects
         struct sync_objects {
             std::array<vk::Semaphore, max_frames_in_flight> image_available_semaphores{};
@@ -1338,7 +1322,6 @@ namespace irglab
 
             return sync;
         }
-		*/
     };
 }
 

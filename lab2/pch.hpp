@@ -24,6 +24,7 @@
 #include <unordered_set>
 #include <map>
 #include <list>
+#include <set>
 
 
 // GLFW includes Vulkan with the following macro.
