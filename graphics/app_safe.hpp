@@ -1,6 +1,3 @@
-#ifndef APP_HPP
-#define APP_HPP
-
 #pragma once
 
 #include "pch.hpp"
@@ -153,7 +150,7 @@ namespace irglab
         [[nodiscard]] GLFWwindow* create_window() const
         {
             glfwInit();
-
+        	
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
@@ -951,7 +948,7 @@ namespace irglab
         const char* shader_main_function_name_ = "main";
         [[nodiscard]] vk::UniqueShaderModule create_shader_module(const std::string& path) const
         {
-            const auto code = irglab::read_shader_file(path);
+            const auto code = irglab::read_file(path);
 
             auto result = device_->createShaderModuleUnique(
                 {
@@ -1324,5 +1321,3 @@ namespace irglab
         }
     };
 }
-
-#endif

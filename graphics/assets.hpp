@@ -1,6 +1,3 @@
-#ifndef APP_UTILS_HPP
-#define APP_UTILS_HPP
-
 #pragma once
 
 #include "pch.hpp"
@@ -13,11 +10,11 @@ namespace irglab
         std::string fragment;
     } const compiled_shader_paths
     {
-        "./spirv/vertex_shader.spirv",
-        "./spirv/fragment_shader.spirv"
+        "./shaders/vertex_shader.spirv",
+        "./shaders/fragment_shader.spirv"
     };
 
-    inline std::vector<char> read_shader_file(const std::string& path)
+    inline std::vector<char> read_file(const std::string& path)
     {
         std::ifstream file(path, std::ios::ate | std::ios::binary);
 
@@ -34,5 +31,3 @@ namespace irglab
         return buffer;
     }
 }
-
-#endif

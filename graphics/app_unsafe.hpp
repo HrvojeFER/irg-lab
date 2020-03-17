@@ -1,7 +1,4 @@
 // ReSharper disable CppZeroConstantCanBeReplacedWithNullptr
-#ifndef APP_UNSAFE_HPP
-#define APP_UNSAFE_HPP
-
 #pragma once
 
 #include "pch.hpp"
@@ -578,9 +575,9 @@ namespace irglab
         void create_graphics_pipeline()
         {
             const auto vertex_shader_code =
-                read_shader_file(compiled_shader_paths.vertex);
+                read_file(compiled_shader_paths.vertex);
             const auto fragment_shader_code =
-                read_shader_file(compiled_shader_paths.fragment);
+                read_file(compiled_shader_paths.fragment);
 
             const auto vertex_shader_module = create_shader_module(vertex_shader_code);
             const auto fragment_shader_module = create_shader_module(fragment_shader_code);
@@ -1350,5 +1347,3 @@ Using standard FIFO presentation mode (Vsync)." << std::endl;
         }
     };
 }
-
-#endif

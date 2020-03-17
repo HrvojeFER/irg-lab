@@ -22,9 +22,9 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{898BC29F-315D-4F75-86F6-996DFE5F5021}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>lab2</RootNamespace>
+    <RootNamespace>graphics</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>lab2</ProjectName>
+    <ProjectName>graphics</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -111,6 +111,8 @@
       <AdditionalIncludeDirectories>C:\VulkanSDK\glm\glm;C:\VulkanSDK\glfw-3.3.2.bin.WIN64\include;C:\VulkanSDK\1.2.131.2\Include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -125,8 +127,8 @@
       <Message>Pre-build script: compiling shaders to SPIR-V.</Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>if not exist "$(OutputPath)spirv" mkdir "$(OutputPath)spirv"
-xcopy "$(ProjectDir)spirv" "$(OutputPath)spirv" /Y</Command>
+      <Command>if not exist "$(OutputPath)shaders" mkdir "$(OutputPath)shaders"
+xcopy "$(ProjectDir)shaders/compiled" "$(OutputPath)shaders" /Y</Command>
       <Message>Post-build: copying SPIR-V shader byte code files.</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -160,6 +162,8 @@ xcopy "$(ProjectDir)spirv" "$(OutputPath)spirv" /Y</Command>
       <AdditionalIncludeDirectories>C:\VulkanSDK\glm\glm;C:\VulkanSDK\glfw-3.3.2.bin.WIN64\include;C:\VulkanSDK\1.2.131.2\Include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -188,12 +192,13 @@ xcopy "$(ProjectDir)spirv" "$(OutputPath)spirv" /Y</Command>
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="app.hpp" />
     <ClInclude Include="app_safe.hpp" />
-    <ClInclude Include="app_safe_testing.hpp" />
     <ClInclude Include="app_unsafe.hpp" />
     <ClInclude Include="assets.hpp" />
     <ClInclude Include="main_unsafe.hpp" />
     <ClInclude Include="pch.hpp" />
+    <ClInclude Include="window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="pre-build.ps1" />

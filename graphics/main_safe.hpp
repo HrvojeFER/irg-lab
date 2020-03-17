@@ -1,18 +1,16 @@
-#ifndef MAIN_UNSAFE_HPP
-#define MAIN_UNSAFE_HPP
-
 #pragma once
 
-#include "app_unsafe.hpp"
+#include "pch.hpp"
+
+#include "app_safe.hpp"
 
 namespace irglab
 {
-    inline int main_unsafe()
+    inline int main_safe()
     {
-        irglab::app_unsafe app;
-
         try
         {
+            const app_safe app;
             app.run();
         }
         catch (const std::exception & e)
@@ -23,6 +21,5 @@ namespace irglab
 
         return EXIT_SUCCESS;
     }
+	
 }
-
-#endif

@@ -21,10 +21,10 @@
     <ClCompile Include="test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="main_safe.hpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="main_safe.hpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,19 +32,22 @@
     <ClInclude Include="pch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="app_unsafe.hpp">
+    <ClInclude Include="window.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="main_unsafe.hpp">
+    <ClInclude Include="app.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="assets.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="app_safe.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="app_safe_testing.hpp">
+    <ClInclude Include="app_unsafe.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="assets.hpp">
+    <ClInclude Include="main_unsafe.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

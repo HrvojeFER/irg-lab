@@ -1,7 +1,5 @@
-#ifndef LAB2_PCH_HPP
-#define LAB2_PCH_HPP
-
-#pragma once
+#ifndef GRAPHICS_PCH_HPP
+#define GRAPHICS_PCH_HPP
 
 
 #include <stdexcept>
@@ -27,7 +25,8 @@
 #include <set>
 
 
-// GLFW includes Vulkan with the following macro.
+// GLFW includes vulkan.h with the following macro.
+// needed to create a drawing surface for Vulkan.
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 
