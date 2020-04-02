@@ -6,6 +6,7 @@
 
 #include "assets.hpp"
 #include "swapchain.hpp"
+#include "vertex_manager.hpp"
 #include "synchronizer.hpp"
 
 
@@ -16,13 +17,48 @@ namespace irglab
 		explicit pipeline(const device& device, const swapchain& swapchain) :
             render_pass_{ create_render_pass(device, swapchain) },
             pipeline_layout_{ create_pipeline_layout(device) },
-            vertex_shader_module_{ create_shader_module(compiled_shader_paths.vertex, device) },
-            fragment_shader_module_{ create_shader_module(compiled_shader_paths.fragment, device) },
-            inner_{ create_graphics_pipeline(device, swapchain) },
-            image_views_{ create_image_views(device, swapchain) },
+
+			vertex_shader_code_{ read_file(compiled_shader_paths.vertex) },
+            vertex_shader_module_
+				{
+					create_shader_module(
+#if !defined(NDEBUG)
+							"Vertex",
+#endif
+							vertex_shader_code_,
+							device)
+				},
+			fragment_shader_code_{ read_file(compiled_shader_paths.fragment) },
+            fragment_shader_module_
+			{
+				create_shader_module(
+#if !defined(NDEBUG)
+						"Fragment",
+#endif
+						fragment_shader_code_,
+						device)
+			},
+
+			inner_{ create_inner(device, swapchain) },
+
+			image_views_{ create_image_views(device, swapchain) },
             framebuffers_{ create_frame_buffers(device, swapchain) },
-            command_pool_{ create_command_pool(device) },
-            command_buffers_{ create_command_buffers(device, swapchain) }
+
+			graphics_command_pool_
+			{
+				create_command_pool(
+					device.queue_family_indices.graphics_family.value(), 
+					device)
+			},
+			vertex_manager_{ device },
+            graphics_command_buffers_{ create_command_buffers(device, swapchain), },
+
+			transfer_command_pool_
+			{
+				create_command_pool(
+					device.queue_family_indices.transfer_family.value(),
+					device)
+			}
 		{
 #if !defined(NDEBUG)
             std::cout << std::endl << "-- Pipeline done --" << std::endl << std::endl;
@@ -37,17 +73,17 @@ namespace irglab
 		[[nodiscard]] std::vector<std::reference_wrapper<const vk::CommandBuffer>> command_buffers()
 			const
 		{
-            return dereference_handles(command_buffers_);
+            return dereference_handles(graphics_command_buffers_);
 		}
 
-        void recreate(const device& device, const swapchain& swapchain)
+        void reconstruct(const device& device, const swapchain& swapchain)
 		{
             render_pass_ = create_render_pass(device, swapchain);
             pipeline_layout_ = create_pipeline_layout(device);
-            inner_ = create_graphics_pipeline(device, swapchain);
+            inner_ = create_inner(device, swapchain);
             image_views_ = create_image_views(device, swapchain);
             framebuffers_ = create_frame_buffers(device, swapchain);
-            command_buffers_ = create_command_buffers(device, swapchain);
+            graphics_command_buffers_ = create_command_buffers(device, swapchain);
 #if !defined(NDEBUG)
             std::cout << std::endl << "-- Pipeline recreated --" << std::endl << std::endl;
 #endif
@@ -55,11 +91,12 @@ namespace irglab
 		
 	private:
         vk::UniqueRenderPass render_pass_;
-		
         vk::UniquePipelineLayout pipeline_layout_;
 
         const char* shader_main_function_name_ = "main";
+        const std::vector<char> vertex_shader_code_;
         const vk::UniqueShaderModule vertex_shader_module_;
+        const std::vector<char> fragment_shader_code_;
         const vk::UniqueShaderModule fragment_shader_module_;
 
         vk::UniquePipeline inner_;
@@ -67,8 +104,12 @@ namespace irglab
         std::vector<vk::UniqueImageView> image_views_;
         std::vector<vk::UniqueFramebuffer> framebuffers_;
         
-        const vk::UniqueCommandPool command_pool_;
-        std::vector<vk::UniqueCommandBuffer> command_buffers_;
+        const vk::UniqueCommandPool graphics_command_pool_;
+        const vertex_manager vertex_manager_;
+        std::vector<vk::UniqueCommandBuffer> graphics_command_buffers_;
+
+        const vk::UniqueCommandPool transfer_command_pool_;
+        std::vector<vk::UniqueCommandBuffer> transfer_command_buffers_;
 
 
         [[nodiscard]] static vk::UniqueRenderPass create_render_pass(
@@ -172,11 +213,12 @@ namespace irglab
         }
 
         [[nodiscard]] static vk::UniqueShaderModule create_shader_module(
-            const std::string& path,
+#if !defined(NDEBUG)
+            const std::string_view name,
+#endif
+            const std::vector<char>& code,
             const device& device)
         {
-            const auto code = irglab::read_file(path);
-
             auto result = device->createShaderModuleUnique(
                 {
                     {},
@@ -185,13 +227,13 @@ namespace irglab
                 });
 
 #if !defined(NDEBUG)
-            std::cout << "Shader module at \"" << path << "\" created" << std::endl;
+            std::cout << name << "shader module created" << std::endl;
 #endif
 
             return result;
         }
 
-        [[nodiscard]] vk::UniquePipeline create_graphics_pipeline(
+        [[nodiscard]] vk::UniquePipeline create_inner(
             const device& device,
             const swapchain& swapchain) const
         {
@@ -215,15 +257,19 @@ namespace irglab
                 }
             };
 
-            std::vector<vk::VertexInputBindingDescription> vertex_input_binding_descriptions{};
-            std::vector<vk::VertexInputAttributeDescription> vertex_input_attribute_descriptions{};
+            const auto vertex_input_binding_descriptions =
+                vertex::get_binding_descriptions();
+            const auto vertex_input_attribute_descriptions =
+                vertex::get_attribute_descriptions();
 
             vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info
             {
                 {},
-                static_cast<unsigned int>(vertex_input_binding_descriptions.size()),
+                static_cast<unsigned int>(
+                    vertex_input_binding_descriptions.size()),
                 vertex_input_binding_descriptions.data(),
-                static_cast<unsigned int>(vertex_input_attribute_descriptions.size()),
+                static_cast<unsigned int>(
+                    vertex_input_attribute_descriptions.size()),
                 vertex_input_attribute_descriptions.data()
             };
 
@@ -330,16 +376,20 @@ namespace irglab
                     {},
                     static_cast<unsigned int>(shader_stages_create_info.size()),
                     shader_stages_create_info.data(),
-                    & vertex_input_state_create_info,
-                    & input_assembly_state_create_info,
+                    &vertex_input_state_create_info,
+                    &input_assembly_state_create_info,
                     nullptr,
-                    & viewport_state_create_info,
-                    & rasterization_state_create_info,
-                    & multisample_state_create_info,
+
+                	&viewport_state_create_info,
+
+                	&rasterization_state_create_info,
+                    &multisample_state_create_info,
                     nullptr,
-                    & color_blend_state_create_info,
+                    &color_blend_state_create_info,
+
                     nullptr,
-                    *pipeline_layout_,
+                	
+                	*pipeline_layout_,
                     *render_pass_,
                     0,
                     {},
@@ -420,12 +470,13 @@ namespace irglab
         }
 
         [[nodiscard]] static vk::UniqueCommandPool create_command_pool(
+            unsigned int queue_family_index,
 			const device& device)
         {
             auto result = device->createCommandPoolUnique(
                 {
                     {},
-                    device.queue_family_indices.graphics_family.value()
+                    queue_family_index
                 });
 
 #if !defined(NDEBUG)
@@ -444,7 +495,7 @@ namespace irglab
                 device->allocateCommandBuffersUnique(
                     vk::CommandBufferAllocateInfo
                     {
-                        *command_pool_,
+                        *graphics_command_pool_,
                         vk::CommandBufferLevel::ePrimary,
                         static_cast<unsigned int>(framebuffers_.size())
                     })
@@ -491,7 +542,18 @@ namespace irglab
 
             	command_buffers[i]->bindPipeline(vk::PipelineBindPoint::eGraphics, *inner_);
 
-            	command_buffers[i]->draw(3, 1, 0, 0);
+                command_buffers[i]->bindVertexBuffers(0,
+                    {
+                        vertex_manager_.buffer()
+                    },
+                    {
+                    	vertex_manager_.buffer_offset
+                    });
+            	command_buffers[i]->draw(
+                    vertex_manager::vertex_count, 
+                    1,
+                    0, 
+                    0);
 
             	command_buffers[i]->endRenderPass();
 

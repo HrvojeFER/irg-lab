@@ -178,7 +178,6 @@ namespace irglab
 				throw std::runtime_error("Failed to present image.");
 			}
 			
-			device_.present_queue.waitIdle();
             current_frame_ = (current_frame_ + 1) % max_frames_in_flight;
         }
 
@@ -216,8 +215,8 @@ namespace irglab
 			
 			wait_idle();
 
-			swapchain_.recreate(device_, window_);
-			pipeline_.recreate(device_, swapchain_);
+			swapchain_.reconstruct(device_, window_);
+			pipeline_.reconstruct(device_, swapchain_);
 			
 #if !defined(NDEBUG)
 			std::cout << std::endl << "---- Artist adapted ----" << std::endl << std::endl << std::endl;

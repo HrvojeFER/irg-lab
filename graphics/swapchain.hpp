@@ -41,7 +41,7 @@ namespace irglab
             return swapchain_configuration_;
         }
 
-        void recreate(const device& device, const window& window)
+        void reconstruct(const device& device, const window& window)
         {
             swapchain_configuration_ = select_swapchain_configuration(device, window);
             swapchain_ = create_swapchain(device, window, *this->swapchain_);
@@ -158,29 +158,65 @@ namespace irglab
             const window& window,
             const vk::SwapchainKHR& old) const
         {
-            auto result = device->createSwapchainKHRUnique(
-                {
-                    {},
-                    window.drawing_surface(),
-                    swapchain_configuration_.image_count,
-                    swapchain_configuration_.format,
-                    swapchain_configuration_.color_space,
-                    swapchain_configuration_.extent,
-                    1,
-                    vk::ImageUsageFlagBits::eColorAttachment,
-                    device.queue_family_indices.are_all_unique() ?
-                        vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
-                    device.queue_family_indices.are_all_unique() ?
-                        static_cast<unsigned int>(device.queue_family_indices.to_vector().size()) : 0,
-                    device.queue_family_indices.are_all_unique() ?
-                        device.queue_family_indices.to_vector().data() : nullptr,
-                    swapchain_configuration_.transform_flag_bit,
-                    vk::CompositeAlphaFlagBitsKHR::eOpaque,
-                    swapchain_configuration_.present_mode,
-                    VK_TRUE,
-                    old
-                });
+            const std::unordered_set<unsigned int> sharing_queue_family_indices_set
+            {
+                device.queue_family_indices.graphics_family.value(),
+                device.queue_family_indices.present_family.value()
+            };
 
+            vk::UniqueSwapchainKHR result;
+            if (sharing_queue_family_indices_set.size() > 1)
+            {
+                const std::vector<unsigned int> sharing_queue_family_indices_array
+                {
+                    sharing_queue_family_indices_set.begin(),
+                    sharing_queue_family_indices_set.end()
+                };
+
+                result = device->createSwapchainKHRUnique(
+                    {
+                        {},
+                        window.drawing_surface(),
+                        swapchain_configuration_.image_count,
+                        swapchain_configuration_.format,
+                        swapchain_configuration_.color_space,
+                        swapchain_configuration_.extent,
+                        1,
+                        vk::ImageUsageFlagBits::eColorAttachment,
+                        vk::SharingMode::eConcurrent,
+                        static_cast<unsigned int>(
+                            sharing_queue_family_indices_array.size()),
+                        sharing_queue_family_indices_array.data(),
+                        swapchain_configuration_.transform_flag_bit,
+                        vk::CompositeAlphaFlagBitsKHR::eOpaque,
+                        swapchain_configuration_.present_mode,
+                        VK_TRUE,
+                        old
+                    });
+            }
+            else
+            {
+                result = device->createSwapchainKHRUnique(
+                    {
+                        {},
+                        window.drawing_surface(),
+                        swapchain_configuration_.image_count,
+                        swapchain_configuration_.format,
+                        swapchain_configuration_.color_space,
+                        swapchain_configuration_.extent,
+                        1,
+                        vk::ImageUsageFlagBits::eColorAttachment,
+						vk::SharingMode::eExclusive,
+                        0,
+                        nullptr,
+                        swapchain_configuration_.transform_flag_bit,
+                        vk::CompositeAlphaFlagBitsKHR::eOpaque,
+                        swapchain_configuration_.present_mode,
+                        VK_TRUE,
+                        old
+                    });
+            }
+        	
 #if !defined(NDEBUG)
             std::cout << "Swapchain created" << std::endl;
 #endif

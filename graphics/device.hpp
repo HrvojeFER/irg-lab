@@ -15,10 +15,13 @@ namespace irglab
     {
         std::optional<unsigned int> graphics_family;
         std::optional<unsigned int> present_family;
+        std::optional<unsigned int> transfer_family;
 
         [[nodiscard]] bool is_complete() const noexcept
         {
-            return graphics_family.has_value() && present_family.has_value();
+            return graphics_family.has_value()
+        		&& present_family.has_value()
+        		&& transfer_family.has_value();
         }
 
         [[nodiscard]] std::vector<unsigned int> to_vector() const
@@ -26,13 +29,14 @@ namespace irglab
             return std::vector<unsigned int>
             {
                 graphics_family.value(),
-                    present_family.value()
+                present_family.value(),
+            	transfer_family.value()
             };
         }
 
         [[nodiscard]] bool are_all_unique() const
         {
-            return graphics_family.value() != present_family.value();
+            return to_unordered_set().size() == 3;
         }
 
         [[nodiscard]] std::unordered_set<unsigned int> to_unordered_set() const
@@ -40,7 +44,8 @@ namespace irglab
             return
             {
                 graphics_family.value(),
-                present_family.value()
+                present_family.value(),
+            	transfer_family.value()
             };
         }
     };
@@ -59,28 +64,30 @@ namespace irglab
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
-        const vk::PhysicalDevice physical_device_;
+        const vk::PhysicalDevice physical_;
 
 	public:
         const queue_family_indices queue_family_indices;
 
     private:
-        vk::UniqueDevice inner_;
+        const vk::UniqueDevice inner_;
 		
 	public:
-        vk::Queue graphics_queue;
-        vk::Queue present_queue;
+        const vk::Queue graphics_queue;
+        const vk::Queue present_queue;
+        const vk::Queue transfer_queue;
 
 		
 		explicit device(
             const environment& environment,
             const window& window) :
 
-			physical_device_(select_physical_device(environment, window)),
-			queue_family_indices(query_queue_families(physical_device_, window)),
+			physical_(select_physical_device(environment, window)),
+			queue_family_indices(query_queue_families(physical_, window)),
 			inner_(create_inner(environment, debug_manager::validation_layer_names)),
 			graphics_queue(create_queue(queue_family_indices.graphics_family.value())),
-			present_queue(create_queue(queue_family_indices.present_family.value()))
+			present_queue(create_queue(queue_family_indices.present_family.value())),
+			transfer_queue(create_queue(queue_family_indices.transfer_family.value()))
 		{
 #if !defined(NDEBUG)
             std::cout << "Queues created" << std::endl;
@@ -99,9 +106,14 @@ namespace irglab
             return &*inner_;
 		}
 
+		[[nodiscard]] const vk::PhysicalDevice& physical() const
+		{
+            return physical_;
+		}
+
         [[nodiscard]] device_surface_info query_surface_info(const window& window) const
 		{
-            return query_surface_info(physical_device_, window);
+            return query_surface_info(physical_, window);
 		}
 
 		
@@ -182,6 +194,11 @@ namespace irglab
                     indices.graphics_family = queue_family_index;
                 }
 
+            	if (queue_family.queueFlags & vk::QueueFlagBits::eTransfer)
+            	{
+                    indices.transfer_family = queue_family_index;
+            	}
+
                 if (indices.is_complete())
                 {
                     break;
@@ -240,7 +257,7 @@ namespace irglab
             }
 #endif
 
-            auto result = physical_device_.createDeviceUnique(
+            auto result = physical_.createDeviceUnique(
                 {
                     {},
                     static_cast<unsigned int>(queues_create_info.size()),

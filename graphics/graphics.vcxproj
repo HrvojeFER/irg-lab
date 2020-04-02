@@ -203,6 +203,7 @@ robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
     <ClInclude Include="pipeline.hpp" />
     <ClInclude Include="swapchain.hpp" />
     <ClInclude Include="synchronizer.hpp" />
+    <ClInclude Include="vertex_manager.hpp" />
     <ClInclude Include="window.hpp" />
   </ItemGroup>
   <ItemGroup>
