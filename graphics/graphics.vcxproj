@@ -128,8 +128,9 @@
     </PreBuildEvent>
     <PostBuildEvent>
       <Command>if not exist "$(OutputPath)shaders" mkdir "$(OutputPath)shaders"
-xcopy "$(ProjectDir)shaders/compiled" "$(OutputPath)shaders" /Y</Command>
-      <Message>Post-build: copying SPIR-V shader byte code files.</Message>
+robocopy "$(ProjectDir)shaders/compiled" "$(OutputPath)shaders"
+robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
+      <Message>Post-build: copying SPIR-V shader byte code files and Vulkan layer settings.</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -180,29 +181,42 @@ xcopy "$(ProjectDir)shaders/compiled" "$(OutputPath)shaders" /Y</Command>
       <Message>Pre-build script: compiling shaders to SPIR-V.</Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>if not exist "$(OutputPath)spirv" mkdir "$(OutputPath)spirv"
-xcopy "$(ProjectDir)spirv" "$(OutputPath)spirv" /Y</Command>
-      <Message>Post-build: copying SPIR-V shader byte code files.</Message>
+      <Command>if not exist "$(OutputPath)shaders" mkdir "$(OutputPath)shaders"
+robocopy "$(ProjectDir)shaders/compiled" "$(OutputPath)shaders"
+robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
+      <Message>Post-build: copying SPIR-V shader byte code files and Vulkan layer settings.</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="main_safe.hpp" />
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.hpp" />
-    <ClInclude Include="app_safe.hpp" />
-    <ClInclude Include="app_unsafe.hpp" />
+    <ClInclude Include="artist.hpp" />
     <ClInclude Include="assets.hpp" />
-    <ClInclude Include="main_unsafe.hpp" />
+    <ClInclude Include="debug_manager.hpp" />
+    <ClInclude Include="device.hpp" />
+    <ClInclude Include="environment.hpp" />
+    <ClInclude Include="extensions.hpp" />
     <ClInclude Include="pch.hpp" />
+    <ClInclude Include="pipeline.hpp" />
+    <ClInclude Include="swapchain.hpp" />
+    <ClInclude Include="synchronizer.hpp" />
     <ClInclude Include="window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="pre-build.ps1" />
     <None Include="vulkan.ruleset" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="vk_layer_settings.txt">
+      <DeploymentContent>true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </Text>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

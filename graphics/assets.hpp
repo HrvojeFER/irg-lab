@@ -10,8 +10,13 @@ namespace irglab
         std::string fragment;
     } const compiled_shader_paths
     {
+#if !defined(NDEBUG)
+        "./shaders/compiled/vertex_shader.spirv",
+        "./shaders/compiled/fragment_shader.spirv"
+#else
         "./shaders/vertex_shader.spirv",
         "./shaders/fragment_shader.spirv"
+#endif
     };
 
     inline std::vector<char> read_file(const std::string& path)

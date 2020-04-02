@@ -1,15 +1,18 @@
 #include "pch.hpp"
 
-#include "main_safe.hpp"
-#include "main_unsafe.hpp"
+#include "app.hpp"
 
-#include "window.hpp"
 
 int main()
 {
-	const irglab::window window{ "dummy" };
-
-	window.loop();
-
+	try
+	{
+		irglab::app{}.run();
+	}
+	catch (const std::exception& ex)
+	{
+		std::cerr << ex.what();
+	}
+	
 	return EXIT_SUCCESS;
 }
