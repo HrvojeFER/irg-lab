@@ -47,7 +47,7 @@ namespace irglab
             swapchain_ = create_swapchain(device, window, *this->swapchain_);
 
 #if !defined(NDEBUG)
-            std::cout << std::endl << "-- Swapchain recreated --" << std::endl << std::endl;
+            std::cout << std::endl << "-- Swapchain reconstructed --" << std::endl << std::endl;
 #endif
         }
 		

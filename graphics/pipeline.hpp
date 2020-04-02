@@ -44,21 +44,10 @@ namespace irglab
 			image_views_{ create_image_views(device, swapchain) },
             framebuffers_{ create_frame_buffers(device, swapchain) },
 
-			graphics_command_pool_
-			{
-				create_command_pool(
-					device.queue_family_indices.graphics_family.value(), 
-					device)
-			},
-			vertex_manager_{ device },
-            graphics_command_buffers_{ create_command_buffers(device, swapchain), },
-
-			transfer_command_pool_
-			{
-				create_command_pool(
-					device.queue_family_indices.transfer_family.value(),
-					device)
-			}
+            vertex_manager_{ device },
+		
+			draw_command_pool_{ create_draw_command_pool(device) },
+            draw_command_buffers_{ create_draw_command_buffers(device, swapchain), }
 		{
 #if !defined(NDEBUG)
             std::cout << std::endl << "-- Pipeline done --" << std::endl << std::endl;
@@ -73,7 +62,7 @@ namespace irglab
 		[[nodiscard]] std::vector<std::reference_wrapper<const vk::CommandBuffer>> command_buffers()
 			const
 		{
-            return dereference_handles(graphics_command_buffers_);
+            return dereference_handles(draw_command_buffers_);
 		}
 
         void reconstruct(const device& device, const swapchain& swapchain)
@@ -83,9 +72,9 @@ namespace irglab
             inner_ = create_inner(device, swapchain);
             image_views_ = create_image_views(device, swapchain);
             framebuffers_ = create_frame_buffers(device, swapchain);
-            graphics_command_buffers_ = create_command_buffers(device, swapchain);
+            draw_command_buffers_ = create_draw_command_buffers(device, swapchain);
 #if !defined(NDEBUG)
-            std::cout << std::endl << "-- Pipeline recreated --" << std::endl << std::endl;
+            std::cout << std::endl << "-- Pipeline reconstructed --" << std::endl << std::endl;
 #endif
 		}
 		
@@ -103,13 +92,11 @@ namespace irglab
 
         std::vector<vk::UniqueImageView> image_views_;
         std::vector<vk::UniqueFramebuffer> framebuffers_;
-        
-        const vk::UniqueCommandPool graphics_command_pool_;
-        const vertex_manager vertex_manager_;
-        std::vector<vk::UniqueCommandBuffer> graphics_command_buffers_;
 
-        const vk::UniqueCommandPool transfer_command_pool_;
-        std::vector<vk::UniqueCommandBuffer> transfer_command_buffers_;
+        const vertex_manager vertex_manager_;
+		
+        const vk::UniqueCommandPool draw_command_pool_;
+        std::vector<vk::UniqueCommandBuffer> draw_command_buffers_;
 
 
         [[nodiscard]] static vk::UniqueRenderPass create_render_pass(
@@ -469,14 +456,12 @@ namespace irglab
             return framebuffers;
         }
 
-        [[nodiscard]] static vk::UniqueCommandPool create_command_pool(
-            unsigned int queue_family_index,
-			const device& device)
+        [[nodiscard]] static vk::UniqueCommandPool create_draw_command_pool(const device& device)
         {
             auto result = device->createCommandPoolUnique(
                 {
                     {},
-                    queue_family_index
+                    device.queue_family_indices.graphics_family.value()
                 });
 
 #if !defined(NDEBUG)
@@ -486,7 +471,7 @@ namespace irglab
             return result;
         }
 
-        [[nodiscard]] std::vector<vk::UniqueCommandBuffer> create_command_buffers(
+        [[nodiscard]] std::vector<vk::UniqueCommandBuffer> create_draw_command_buffers(
 			const device& device,
             const swapchain& swapchain) const
         {
@@ -495,7 +480,7 @@ namespace irglab
                 device->allocateCommandBuffersUnique(
                     vk::CommandBufferAllocateInfo
                     {
-                        *graphics_command_pool_,
+                        *draw_command_pool_,
                         vk::CommandBufferLevel::ePrimary,
                         static_cast<unsigned int>(framebuffers_.size())
                     })

@@ -55,10 +55,16 @@ namespace irglab
 		
 		explicit vertex_manager(const device& device) :
 			device_(device),
-			buffer_{ create_buffer() },
-			buffer_memory_{ allocate_buffer_memory() }
+			vertex_buffer_
+			{
+				create_buffer(
+					vk::BufferUsageFlagBits::eVertexBuffer
+					| vk::BufferUsageFlagBits::eTransferDst)
+			},
+			vertex_buffer_memory_{ allocate_buffer_memory(*vertex_buffer_) },
+			transfer_command_pool_{ create_transfer_command_pool() }
 		{
-			device->bindBufferMemory(*buffer_, *buffer_memory_, 0);
+			device->bindBufferMemory(*vertex_buffer_, *vertex_buffer_memory_, 0);
 
 #if !defined(NDEBUG)
 			std::cout << "Memory bound to vertex buffer" << std::endl;
@@ -69,8 +75,8 @@ namespace irglab
 			std::cout << "-Vertex buffer done-" << std::endl;
 #endif
 
-			// TODO: add some real vertices
-			fill_buffer(
+			// TODO: make actual use of this
+			write_to_buffer(
 				{
 					{
 						{
@@ -78,12 +84,16 @@ namespace irglab
 							{0.3f, 0.0f, 1.0f}
 						},
 						{
-							{0.5f, 0.5f},
+							{0.5f, 0.6f},
 							{1.0f, 0.6f, 0.0f}
 						},
 						{
 							{-0.5f, 0.5f},
 							{0.7f, 0.0f, 1.0f}
+						},
+						{
+							{1.0f, 1.0f},
+							{0.0f, 0.5f, 0.7f}
 						}
 					}
 				});
@@ -91,16 +101,33 @@ namespace irglab
 
 		[[nodiscard]] const vk::Buffer& buffer() const
 		{
-			return *buffer_;
+			return *vertex_buffer_;
 		}
 
+		void write_to_buffer(std::array<vertex, buffer_size> vertices) const
+		{
+			auto staging_buffer{ create_buffer(vk::BufferUsageFlagBits::eTransferSrc) };
+			auto staging_buffer_memory{ allocate_buffer_memory(*staging_buffer) };
+			device_->bindBufferMemory(*staging_buffer, *staging_buffer_memory, 0);
+
+			std::memcpy(
+				device_->mapMemory(*staging_buffer_memory, buffer_offset, buffer_size, {}),
+				vertices.data(),
+				buffer_size);
+			device_->unmapMemory(*staging_buffer_memory);
+
+			copy_buffer(*vertex_buffer_, *staging_buffer);
+		}
+		
 	private:
 		const device& device_;
 
-		const vk::UniqueBuffer buffer_;
-		const vk::UniqueDeviceMemory buffer_memory_;
+		const vk::UniqueBuffer vertex_buffer_;
+		const vk::UniqueDeviceMemory vertex_buffer_memory_;
 
-		[[nodiscard]] vk::UniqueBuffer create_buffer() const
+		const vk::UniqueCommandPool transfer_command_pool_;
+
+		[[nodiscard]] vk::UniqueBuffer create_buffer(const vk::BufferUsageFlags& usage) const
 		{
 			const std::unordered_set<unsigned int> sharing_queue_family_indices_set
 			{
@@ -121,7 +148,7 @@ namespace irglab
 					{
 						{},
 						buffer_size,
-						vk::BufferUsageFlagBits::eVertexBuffer,
+						usage,
 						vk::SharingMode::eConcurrent,
 						static_cast<unsigned int>(sharing_queue_family_indices_array.size()),
 						sharing_queue_family_indices_array.data()
@@ -133,7 +160,7 @@ namespace irglab
 					{
 						{},
 						buffer_size,
-						vk::BufferUsageFlagBits::eVertexBuffer,
+						usage,
 						vk::SharingMode::eExclusive
 					});
 			}
@@ -144,9 +171,9 @@ namespace irglab
 			return result;
 		}
 
-		[[nodiscard]] vk::UniqueDeviceMemory allocate_buffer_memory() const
+		[[nodiscard]] vk::UniqueDeviceMemory allocate_buffer_memory(const vk::Buffer& buffer) const
 		{
-			const auto& memory_requirements = device_->getBufferMemoryRequirements(*buffer_);
+			const auto& memory_requirements = device_->getBufferMemoryRequirements(*vertex_buffer_);
 			
 			auto result = device_->allocateMemoryUnique(
 				{
@@ -183,13 +210,67 @@ namespace irglab
 			throw std::runtime_error("Failed to find suitable memory type");
 		}
 
-		void fill_buffer(std::array<vertex, buffer_size> vertices) const
+		[[nodiscard]] vk::UniqueCommandPool create_transfer_command_pool() const
 		{
-			memcpy(
-				device_->mapMemory(*buffer_memory_, buffer_offset, buffer_size, {}),
-				vertices.data(),
-				buffer_size);
-			device_->unmapMemory(*buffer_memory_);
+			return device_->createCommandPoolUnique(
+				{
+					vk::CommandPoolCreateFlagBits::eTransient,
+					device_.queue_family_indices.transfer_family.value()
+				});
+		}
+		
+
+		void copy_buffer(const vk::Buffer& destination, const vk::Buffer& source) const
+		{
+			auto transfer_command_buffer
+			{
+				std::move(
+					device_->allocateCommandBuffersUnique(
+						{
+							*transfer_command_pool_,
+							vk::CommandBufferLevel::ePrimary,
+							1
+						})[0])
+			};
+
+			transfer_command_buffer->begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+
+			transfer_command_buffer->copyBuffer(source, destination,
+				{
+					{
+						0,
+						0,
+						buffer_size
+					}
+				});
+
+			transfer_command_buffer->end();
+
+			const auto transfer_command_fence = 
+				device_->createFenceUnique({});
+
+			device_.transfer_queue.submit(
+				{
+					{
+						0,
+						nullptr,
+						nullptr,
+						1,
+						&*transfer_command_buffer,
+						0,
+						nullptr
+					}
+				},
+				*transfer_command_fence);
+
+			if (device_->waitForFences(
+					1,
+					&*transfer_command_fence, 
+					VK_TRUE,
+					UINT64_MAX) != vk::Result::eSuccess)
+			{
+				device_.transfer_queue.waitIdle();
+			}
 		}
 	};
 }
