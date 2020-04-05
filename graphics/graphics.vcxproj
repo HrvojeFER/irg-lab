@@ -165,6 +165,8 @@ robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -192,9 +194,11 @@ robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="app.hpp" />
+    <ClInclude Include="convex_polygon_app.hpp" />
+    <ClInclude Include="app_base.hpp" />
     <ClInclude Include="artist.hpp" />
     <ClInclude Include="assets.hpp" />
+    <ClInclude Include="convex_polygon.hpp" />
     <ClInclude Include="debug_manager.hpp" />
     <ClInclude Include="device.hpp" />
     <ClInclude Include="environment.hpp" />

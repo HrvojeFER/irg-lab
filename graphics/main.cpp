@@ -1,13 +1,13 @@
 #include "pch.hpp"
 
-#include "app.hpp"
+#include "convex_polygon_app.hpp"
 
 
 int main()
 {
 	try
 	{
-		irglab::app{}.run();
+		irglab::convex_polygon_app{}.run();
 	}
 	catch (const std::exception& ex)
 	{

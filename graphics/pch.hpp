@@ -2,10 +2,12 @@
 #define GRAPHICS_PCH_HPP
 
 
+// Language "features"
 #include <stdexcept>
 #include <functional>
 #include <optional>
 
+// Streams, IO, strings
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -14,14 +16,17 @@
 // UINT32_MAX and UINT64 needed
 #include <cstdint>
 
+// Collections and such
 #include <algorithm>
 #include <vector>
 #include <array>
 #include <unordered_set>
 #include <map>
-#include <list>
 #include <set>
-#include <iterator>
+
+// Sleep
+#include <chrono>
+#include <thread>
 
 
 // GLFW includes vulkan.h with the following macro.
@@ -29,6 +34,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 
+// Math
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm.hpp"

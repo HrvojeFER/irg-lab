@@ -12,31 +12,8 @@ namespace irglab
 {
 	struct synchronizer
 	{
-		struct key_hasher;
-
-		struct key {
-			key() : inner_(inner_counter_++) {}
-
-			bool operator ==(const key& other) const
-			{
-				return inner_ == other.inner_;
-			}
-
-		private:
-			friend struct key_hasher;
-
-			inline static unsigned int inner_counter_ = 0;
-			const unsigned int inner_;
-		};
-
-		struct key_hasher
-		{
-			std::size_t operator()(key const& key) const noexcept
-			{
-				return key.inner_;
-			}
-		};
-
+		using key = semantic_key;
+		
 		struct sync_vector_description
 		{
 			const key key;
@@ -84,7 +61,7 @@ namespace irglab
 		
 	private:
 		template<typename SyncType>
-		using sync_map = std::unordered_map<key, std::vector<SyncType>, key_hasher>;
+		using sync_map = semantic_map<std::vector<SyncType>>;
 		
 		const sync_map<vk::UniqueFence> fences_;
 		const sync_map<vk::UniqueSemaphore> semaphores_;
@@ -109,7 +86,7 @@ namespace irglab
 					sync_vector_description.count
 				};
 
-				for (size_t i = 0 ; i < sync_vector_description.count ; ++i)
+				for (size_t i = 0; i < sync_vector_description.count; ++i)
 				{
 					result[sync_vector_description.key][i] = create_sync_type(device);
 				}
@@ -149,13 +126,13 @@ namespace irglab
 			const sync_map<SyncType>& sync_map,
 			const key& key)
 		{
-			const auto& result_iterator = sync_map.find(key);
-			if (result_iterator == sync_map.end())
+			const auto& find_pair = sync_map.find(key);
+			if (find_pair == sync_map.end())
 			{
 				throw std::range_error("Key not found.");
 			}
 			
-			return result_iterator->second;
+			return find_pair->second;
 		}
 	};
 }

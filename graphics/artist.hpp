@@ -3,12 +3,14 @@
 
 
 #include "pch.hpp"
+#include "extensions.hpp"
 
 #include "environment.hpp"
 #include "window.hpp"
 
 #include "device.hpp"
 #include "swapchain.hpp"
+#include "vertex_manager.hpp"
 #include "pipeline.hpp"
 
 
@@ -19,8 +21,9 @@ namespace irglab
 		artist(const environment& environment, window& window) :
 			window_{ window },
 			device_{ environment, window_ },
+			vertex_manager_{ device_ },
 			swapchain_{ device_, window_ },
-			pipeline_{ device_, swapchain_ },
+			pipeline_{ device_, swapchain_, vertex_manager_ },
 			sync_
 				{
 					device_,
@@ -186,15 +189,35 @@ namespace irglab
 			device_->waitIdle();
 		}
 
+		struct line
+		{
+			vertex start;
+			vertex end;
+		};
+
+		void set_lines_to_draw(const std::vector<line>& lines) const
+		{
+			std::vector<vertex> vertices{ lines.size() * 2 };
+
+			for (const auto& line : lines)
+			{
+				vertices.push_back(line.start);
+				vertices.push_back(line.end);
+			}
+
+			vertex_manager_.set_buffer(vertices);
+		}
 		
 	private:
 		window& window_;
+		
 		const device device_;
+		const vertex_manager vertex_manager_;
 		swapchain swapchain_;
 		pipeline pipeline_;
 
-		
 		static const unsigned int max_frames_in_flight = 2;
+
 		inline static const synchronizer::key in_flight{};
 		inline static const synchronizer::key image_available{};
 		inline static const synchronizer::key render_finished{};

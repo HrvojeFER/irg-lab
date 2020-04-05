@@ -10,7 +10,7 @@
 namespace irglab
 {
 	struct vertex {
-		glm::vec2 pos;
+		glm::vec2 position;
 		glm::vec3 color;
 
 		[[nodiscard]] static std::vector<vk::VertexInputBindingDescription>
@@ -35,7 +35,7 @@ namespace irglab
 					0,
 					0,
 					vk::Format::eR32G32Sfloat,
-					offsetof(vertex, pos)
+					offsetof(vertex, position)
 				},
 				{
 					1,
@@ -49,7 +49,10 @@ namespace irglab
 	
 	struct vertex_manager
 	{
-		static inline const unsigned int vertex_count = 10;
+		// sizeof(float) = 4
+		// sizeof(vertex) = 2 * 4 + 3 * 4 = 20 - position + color
+		// buffer size = 20 * 3276 = 65520 < 65536 = 2^16
+		static inline const unsigned int vertex_count = 3276;
 		static inline const vk::DeviceSize buffer_size = sizeof(vertex) * vertex_count;
 		const vk::DeviceSize buffer_offset = 0;
 		
@@ -72,31 +75,8 @@ namespace irglab
 
 
 #if !defined(NDEBUG)
-			std::cout << "-Vertex buffer done-" << std::endl;
+			std::cout << std::endl << "-- Vertex buffer done --" << std::endl << std::endl;
 #endif
-
-			// TODO: make actual use of this
-			write_to_buffer(
-				{
-					{
-						{
-							{0.0f, -0.5f},
-							{0.3f, 0.0f, 1.0f}
-						},
-						{
-							{0.5f, 0.6f},
-							{1.0f, 0.6f, 0.0f}
-						},
-						{
-							{-0.5f, 0.5f},
-							{0.7f, 0.0f, 1.0f}
-						},
-						{
-							{1.0f, 1.0f},
-							{0.0f, 0.5f, 0.7f}
-						}
-					}
-				});
 		}
 
 		[[nodiscard]] const vk::Buffer& buffer() const
@@ -104,19 +84,41 @@ namespace irglab
 			return *vertex_buffer_;
 		}
 
-		void write_to_buffer(std::array<vertex, buffer_size> vertices) const
+		void set_buffer(const std::vector<vertex>& vertices) const
 		{
 			auto staging_buffer{ create_buffer(vk::BufferUsageFlagBits::eTransferSrc) };
 			auto staging_buffer_memory{ allocate_buffer_memory(*staging_buffer) };
 			device_->bindBufferMemory(*staging_buffer, *staging_buffer_memory, 0);
 
+#if !defined(NDEBUG)
+			std::cout << "Memory bound to staging buffer" << std::endl;
+#endif
+
+			const auto to_write = new vertex[vertex_count];
+
+			std::memcpy(to_write,
+				vertices.data(),
+				min(sizeof(vertex) * vertices.size(), buffer_size));
+
 			std::memcpy(
 				device_->mapMemory(*staging_buffer_memory, buffer_offset, buffer_size, {}),
-				vertices.data(),
+				to_write,
 				buffer_size);
 			device_->unmapMemory(*staging_buffer_memory);
 
+			delete[] to_write;
+			
+#if !defined(NDEBUG)
+			std::cout << "Vertices copied to staging buffer" << std::endl;
+#endif
+			
 			copy_buffer(*vertex_buffer_, *staging_buffer);
+
+#if !defined(NDEBUG)
+			std::cout << "Staging buffer copied to vertex buffer" << std::endl;
+			std::cout << std::endl << "-- Vertex copy operation complete --" << std::endl << std::endl;
+#endif
+
 		}
 		
 	private:

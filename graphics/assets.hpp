@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRAPHICS_ASSETS_HPP
+#define GRAPHICS_ASSETS_HPP
 
 #include "pch.hpp"
 
@@ -36,3 +37,5 @@ namespace irglab
         return buffer;
     }
 }
+
+#endif

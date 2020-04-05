@@ -5,7 +5,9 @@
 #include "pch.hpp"
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
+#if !defined(NDEBUG)
 #include "debug_manager.hpp"
+#endif
 
 
 namespace irglab
@@ -17,9 +19,9 @@ namespace irglab
 
         explicit environment(const std::string_view name = default_name) :
 			name(name),
-            instance_{ create_instance() },
+            instance_{ create_instance() }
 #if !defined(NDEBUG)
-            debug_messenger_
+            ,debug_messenger_
 				{
 					instance_->createDebugUtilsMessengerEXTUnique(
                         debug_manager::vulkan_debug_messenger_create_info)
@@ -29,7 +31,8 @@ namespace irglab
 #if !defined(NDEBUG)
             std::cout << "Vulkan debug messenger established" << std::endl;
         	
-            std::cout << std::endl << "---- Environment done ----" << std::endl << std::endl << std::endl;
+            std::cout << std::endl << "---- Environment done ----" << std::endl << 
+                std::endl << std::endl;
 #endif
         }
 

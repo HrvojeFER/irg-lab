@@ -14,7 +14,11 @@ namespace irglab
 {
 	struct pipeline
 	{
-		explicit pipeline(const device& device, const swapchain& swapchain) :
+		explicit pipeline(
+            const device& device,
+            const swapchain& swapchain,
+            const vertex_manager& vertex_manager) :
+		
             render_pass_{ create_render_pass(device, swapchain) },
             pipeline_layout_{ create_pipeline_layout(device) },
 
@@ -44,10 +48,10 @@ namespace irglab
 			image_views_{ create_image_views(device, swapchain) },
             framebuffers_{ create_frame_buffers(device, swapchain) },
 
-            vertex_manager_{ device },
+            vertex_manager_{ vertex_manager },
 		
 			draw_command_pool_{ create_draw_command_pool(device) },
-            draw_command_buffers_{ create_draw_command_buffers(device, swapchain), }
+            draw_command_buffers_{ create_draw_command_buffers(device, swapchain) }
 		{
 #if !defined(NDEBUG)
             std::cout << std::endl << "-- Pipeline done --" << std::endl << std::endl;
@@ -68,7 +72,6 @@ namespace irglab
         void reconstruct(const device& device, const swapchain& swapchain)
 		{
             render_pass_ = create_render_pass(device, swapchain);
-            pipeline_layout_ = create_pipeline_layout(device);
             inner_ = create_inner(device, swapchain);
             image_views_ = create_image_views(device, swapchain);
             framebuffers_ = create_frame_buffers(device, swapchain);
@@ -93,7 +96,7 @@ namespace irglab
         std::vector<vk::UniqueImageView> image_views_;
         std::vector<vk::UniqueFramebuffer> framebuffers_;
 
-        const vertex_manager vertex_manager_;
+        const vertex_manager& vertex_manager_;
 		
         const vk::UniqueCommandPool draw_command_pool_;
         std::vector<vk::UniqueCommandBuffer> draw_command_buffers_;
@@ -263,7 +266,7 @@ namespace irglab
             vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info
             {
                 {},
-                vk::PrimitiveTopology::eTriangleList,
+                vk::PrimitiveTopology::eLineList,
                 VK_FALSE
             };
 
