@@ -59,13 +59,7 @@
     <ClInclude Include="vertex_manager.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="convex_polygon.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="app_base.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="convex_polygon_app.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
