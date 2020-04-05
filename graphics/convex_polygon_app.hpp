@@ -160,6 +160,8 @@ namespace irglab
                 "C-PAP (TM) properly and I wouldn't want that to happen. :(" << std::endl;
             std::cout << "I will try to make a convex polygon " <<
                 "with the highest number of the points you set as I possibly can." << std::endl;
+            std::cout << "I will be at my best if you set the points in a circular motion." <<
+                std::endl;
             std::cout << "\tTo check if a point is inside the drawn convex polygon, " << 
                 "click on the drawing screen with the right mouse button." << std::endl;
             std::cout << "\tTo reset the convex polygon, press delete." << std::endl << std::endl;

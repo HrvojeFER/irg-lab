@@ -28,7 +28,7 @@ namespace irglab
 		};
 	}
 
-	[[nodiscard]] constexpr homogeneous_line_type get_line_at(const float y_coordinate) noexcept
+	[[nodiscard]] constexpr homogeneous_line_type get_line_at_y(const float y_coordinate) noexcept
 	{
 		return {0, 1, -y_coordinate};
 	}
@@ -103,9 +103,11 @@ namespace irglab
 
 
 		explicit convex_polygon(const std::vector<homogeneous_point_type>& points) :
-			vertices_{take_prefix_forming_convex_polygon(points)},
-			edges_{get_successive_point_lines(vertices_)},
-			direction_{get_direction(vertices_[0], vertices_[1], vertices_[2])} { }
+			vertices_{ take_prefix_forming_convex_polygon(points) },
+			direction_{ get_direction(vertices_[0], vertices_[1], vertices_[2]) },
+			edges_{ get_successive_point_lines(vertices_) },
+			left_edges_{ get_edges_from_direction(left) },
+			right_edges_{ get_edges_from_direction(right) } { }
 
 
 		friend std::ostream& operator <<(std::ostream& output_stream,
@@ -114,12 +116,9 @@ namespace irglab
 
 		[[nodiscard]] bool is_inside(const homogeneous_point_type& point) const
 		{
-			for (size_t index = 1; index < vertices_.size(); ++index)
+			for (const auto& edge : edges_)
 			{
-				if (direction_ != get_direction(
-					vertices_[index],
-					vertices_[(index + 1) % vertices_.size()],
-					point))
+				if (direction_ != get_direction(edge, point))
 				{
 					return false;
 				}
@@ -137,20 +136,11 @@ namespace irglab
 
 		[[nodiscard]] edge_intersections get_edge_intersections_at_y(const float y_coordinate) const
 		{
-			const auto y_line = get_line_at(y_coordinate);
-
-			auto left_intersections
-			{
-				get_intersections(get_edges_in_direction(left), y_line)
-			};
-
-			auto right_intersections
-			{
-				get_intersections(get_edges_in_direction(right), y_line)
-			};
+			const auto y_line = get_line_at_y(y_coordinate);
 
 			homogeneous_point_type max_left{-FLT_MAX, 0, 1};
-			for (const auto& left_intersection : left_intersections)
+			for (const auto& left_intersection : 
+				get_intersections(left_edges_, y_line))
 			{
 				if (left_intersection.x / left_intersection.z > max_left.x / max_left.z)
 				{
@@ -159,7 +149,8 @@ namespace irglab
 			}
 
 			homogeneous_point_type min_right{FLT_MAX, 0, 1};
-			for (const auto& right_intersection : right_intersections)
+			for (const auto& right_intersection : 
+				get_intersections(right_edges_, y_line))
 			{
 				if (right_intersection.x / right_intersection.z < min_right.x / min_right.z)
 				{
@@ -173,7 +164,7 @@ namespace irglab
 		[[nodiscard]] std::vector<homogeneous_point_type> get_all_edge_line_intersections_at_y(
 			const float y_coordinate) const
 		{
-			return get_intersections(edges_, get_line_at(y_coordinate));
+			return get_intersections(edges_, get_line_at_y(y_coordinate));
 		}
 
 		[[nodiscard]] vertex_type get_vertex_on(const direction_type top_or_bottom) const
@@ -182,7 +173,7 @@ namespace irglab
 
 			for (const auto& vertex : vertices_)
 			{
-				if (top_or_bottom == vertex.y / vertex.z > result.y / result.z)
+				if (vertex.y / vertex.z > result.y / result.z == top_or_bottom)
 				{
 					result = vertex;
 				}
@@ -198,21 +189,28 @@ namespace irglab
 
 	private:
 		std::vector<vertex_type> vertices_;
-		std::vector<edge_type> edges_;
 
 		direction_type direction_;
 
+		std::vector<edge_type> edges_;
+		// stored for fast intersection calculations
+		std::vector<edge_type> left_edges_;
+		std::vector<edge_type> right_edges_;
 
-		[[nodiscard]] std::vector<edge_type> get_edges_in_direction(
+
+		[[nodiscard]] std::vector<edge_type> get_edges_from_direction(
 			const direction_type left_or_right) const
 		{
 			std::vector<edge_type> result{};
 
 			for (size_t index = 0; index < vertices_.size(); ++index)
 			{
-				if (vertices_[index].y / vertices_[index].z > 
-					vertices_[(index + 1) % vertices_.size()].y / 
-					vertices_[(index + 1) % vertices_.size()].z ==
+				const auto& first_vertex = vertices_[index];
+				const auto& second_vertex = 
+					vertices_[(index + 1) % vertices_.size()];
+				
+				if (first_vertex.y / first_vertex.z > 
+					second_vertex.y / second_vertex.z ==
 					direction_ == left_or_right)
 				{
 					result.push_back(edges_[index]);
@@ -224,9 +222,22 @@ namespace irglab
 
 
 		[[nodiscard]] static direction_type get_direction(
-			const vertex_type& first,
-			const vertex_type& second,
-			const vertex_type& third)
+			const edge_type& edge,
+			const homogeneous_point_type& point)
+		{
+			if (const auto relation = dot(point, edge);
+				relation != 0)
+			{
+				return relation > 0;
+			}
+
+			throw std::invalid_argument("Point is collinear with the edge.");
+		}
+
+		[[nodiscard]] static direction_type get_direction(
+			const homogeneous_point_type& first,
+			const homogeneous_point_type& second,
+			const homogeneous_point_type& third)
 		{
 			if (const auto relation = dot(third, cross(first, second));
 				relation != 0)
@@ -239,7 +250,7 @@ namespace irglab
 
 		[[nodiscard]] static bool are_convex_polygon_in_direction(
 			const std::vector<vertex_type>& points,
-			const direction_type direction)
+			const direction_type circular_direction)
 		{
 			if (points.size() < 3)
 			{
@@ -253,7 +264,7 @@ namespace irglab
 					points[(index + 1) % points.size()],
 					points[(index + 2) % points.size()]);
 				
-				if (direction != current_direction)
+				if (circular_direction != current_direction)
 				{
 					return false;
 				}

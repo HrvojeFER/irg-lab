@@ -10,8 +10,8 @@
 namespace irglab
 {
 	struct vertex {
-		glm::vec2 position;
-		glm::vec3 color;
+		glm::vec2 position{ 0.0f, 0.0f };
+		glm::vec3 color{ 0.0f, 0.0f, 0.0f };
 
 		[[nodiscard]] static std::vector<vk::VertexInputBindingDescription>
 			get_binding_descriptions()
@@ -94,7 +94,7 @@ namespace irglab
 			std::cout << "Memory bound to staging buffer" << std::endl;
 #endif
 
-			const auto to_write = new vertex[vertex_count];
+			const auto to_write = new vertex[vertex_count] { {} };
 
 			std::memcpy(to_write,
 				vertices.data(),
