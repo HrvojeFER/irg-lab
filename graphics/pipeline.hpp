@@ -266,7 +266,7 @@ namespace irglab
             vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info
             {
                 {},
-                vk::PrimitiveTopology::eLineList,
+                vk::PrimitiveTopology::eTriangleList,
                 VK_FALSE
             };
 

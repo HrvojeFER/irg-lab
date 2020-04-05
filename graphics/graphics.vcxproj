@@ -129,8 +129,11 @@
     <PostBuildEvent>
       <Command>if not exist "$(OutputPath)shaders" mkdir "$(OutputPath)shaders"
 robocopy "$(ProjectDir)shaders/compiled" "$(OutputPath)shaders"
-robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
-      <Message>Post-build: copying SPIR-V shader byte code files and Vulkan layer settings.</Message>
+robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt
+
+if not exist "$(OutputPath)objects" mkdir "$(OutputPath)objects"
+robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
+      <Message>Post-build: copying SPIR-V shader byte code files, Vulkan layer settings and object files.</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -185,8 +188,11 @@ robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
     <PostBuildEvent>
       <Command>if not exist "$(OutputPath)shaders" mkdir "$(OutputPath)shaders"
 robocopy "$(ProjectDir)shaders/compiled" "$(OutputPath)shaders"
-robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
-      <Message>Post-build: copying SPIR-V shader byte code files and Vulkan layer settings.</Message>
+robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt
+
+if not exist "$(OutputPath)objects" mkdir "$(OutputPath)objects"
+robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
+      <Message>Post-build: copying SPIR-V shader byte code files, Vulkan layer settings and object files.</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -194,6 +200,8 @@ robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="body.hpp" />
+    <ClInclude Include="body_app.hpp" />
     <ClInclude Include="convex_polygon_app.hpp" />
     <ClInclude Include="app_base.hpp" />
     <ClInclude Include="artist.hpp" />
@@ -212,6 +220,8 @@ robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
   </ItemGroup>
   <ItemGroup>
     <None Include="pre-build.ps1" />
+    <None Include="shaders\fragment_shader.frag" />
+    <None Include="shaders\vertex_shader.vert" />
     <None Include="vulkan.ruleset" />
   </ItemGroup>
   <ItemGroup>

@@ -12,10 +12,9 @@
 
 namespace irglab
 {
-	class convex_polygon_app final : public app_base
+	struct convex_polygon_app final : app_base
 	{
-	public:
-        explicit convex_polygon_app() : app_base("Drawing window") { }
+		explicit convex_polygon_app() : app_base("Drawing window") { }
 
 	private:
         void pre_run() override
@@ -178,15 +177,15 @@ namespace irglab
         }
 		
         std::vector<window::cursor_position> cursor_positions_{ 0 };
-        std::optional<convex_polygon> convex_polygon_;
+        std::optional<two_dimensional::convex_polygon> convex_polygon_;
 
 		[[nodiscard]] std::vector<artist::line> get_lines_for_drawing_from_convex_polygon(
-            const convex_polygon& convex_polygon) const
+            const two_dimensional::convex_polygon& convex_polygon) const
 		{
             const auto top =
-                convex_polygon.get_vertex_on(convex_polygon::top).y;
+                convex_polygon.get_vertex_on(two_dimensional::convex_polygon::top).y;
             const auto bottom =
-                convex_polygon.get_vertex_on(convex_polygon::bottom).y;
+                convex_polygon.get_vertex_on(two_dimensional::convex_polygon::bottom).y;
 
             const auto step = 2.0f / static_cast<float>(window_.query_extent().height);
 
@@ -195,7 +194,7 @@ namespace irglab
             for (
                 auto y_coordinate = bottom;
                 y_coordinate < top;
-                y_coordinate = y_coordinate + step)
+                y_coordinate = y_coordinate + step)  // NOLINT(cert-flp30-c)
             {
                 const auto convex_polygon_edge_intersections = 
                     convex_polygon.get_edge_intersections_at_y(y_coordinate);
@@ -204,11 +203,13 @@ namespace irglab
                 lines_for_drawing.push_back(
                     {
                         {
-                            to_cartesian_coordinates(convex_polygon_edge_intersections.left),
+	                        two_dimensional::to_cartesian_coordinates(
+                                convex_polygon_edge_intersections.left),
 							{ 0.5f, 0.0f, 0.5f }
                         },
                         {
-                            to_cartesian_coordinates(convex_polygon_edge_intersections.right),
+	                        two_dimensional::to_cartesian_coordinates(
+                                convex_polygon_edge_intersections.right),
                             { 0.3f, 0.0f, 1.0f }
                         }
                     });
@@ -218,7 +219,7 @@ namespace irglab
 		}
 
 		[[nodiscard]] static std::vector<artist::line> get_edges_for_drawing_from_convex_polygon(
-			const convex_polygon& convex_polygon)
+			const two_dimensional::convex_polygon& convex_polygon)
 		{
             const auto vertices = convex_polygon.get_vertices();
             std::vector<artist::line> edges_for_drawing{ vertices.size() };
@@ -228,11 +229,12 @@ namespace irglab
                 edges_for_drawing.push_back(
                 {
                     {
-	                    to_cartesian_coordinates(vertices[index]),
+	                    two_dimensional::to_cartesian_coordinates(vertices[index]),
 						{1.0f, 0.6f, 0.0f}
                     },
                 	{
-                        to_cartesian_coordinates(vertices[(index + 1) % vertices.size()]),
+	                    two_dimensional::to_cartesian_coordinates(
+                            vertices[(index + 1) % vertices.size()]),
                         {0.8f, 0.8f, 0.0f}
                     }
                 });
@@ -241,10 +243,10 @@ namespace irglab
             return edges_for_drawing;
 		}
 		
-		[[nodiscard]] convex_polygon get_convex_polygon_from_cursor_positions(
+		[[nodiscard]] two_dimensional::convex_polygon get_convex_polygon_from_cursor_positions(
             const std::vector<window::cursor_position>& cursor_positions) const
 		{
-            std::vector<homogeneous_point_type> points{ cursor_positions.size() };
+            std::vector<two_dimensional::homogeneous_point_type> points{ cursor_positions.size() };
 
             std::transform(
                 cursor_positions.begin(),
@@ -255,16 +257,17 @@ namespace irglab
                     return to_homogeneous_coordinates(cursor_position);
                 });
 
-			return convex_polygon{ points };
+			return two_dimensional::convex_polygon{ points };
 		}
 
-		[[nodiscard]] homogeneous_coordinates_type to_homogeneous_coordinates(
+		[[nodiscard]] two_dimensional::homogeneous_coordinates_type to_homogeneous_coordinates(
             const window::cursor_position& cursor_position) const
 		{
-            return irglab::to_homogeneous_coordinates(to_vulkan_friendly_coordinates(cursor_position));
+            return two_dimensional::to_homogeneous_coordinates(
+                to_vulkan_friendly_coordinates(cursor_position));
 		}
 
-        [[nodiscard]] cartesian_coordinates_type to_vulkan_friendly_coordinates(
+        [[nodiscard]] two_dimensional::cartesian_coordinates_type to_vulkan_friendly_coordinates(
             const window::cursor_position& cursor_position) const
         {
             const auto window_extent = window_.query_extent();
@@ -272,7 +275,7 @@ namespace irglab
             const auto x = 2 * (cursor_position.x / window_extent.width) - 1;
             const auto y = 2 * (cursor_position.y / window_extent.height) - 1;
 
-            const cartesian_coordinates_type vulkan_friendly{ x, y };
+            const two_dimensional::cartesian_coordinates_type vulkan_friendly{ x, y };
 
             return vulkan_friendly;
         }

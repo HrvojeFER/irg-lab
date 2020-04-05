@@ -5,7 +5,7 @@
 #include "pch.hpp"
 
 
-namespace irglab
+namespace irglab::two_dimensional
 {
 	using cartesian_coordinates_type = glm::vec2;
 	using homogeneous_coordinates_type = glm::vec3;
@@ -16,7 +16,7 @@ namespace irglab
 	[[nodiscard]] constexpr homogeneous_coordinates_type to_homogeneous_coordinates(
 		const cartesian_coordinates_type& cartesian_coordinates)
 	{
-		return {cartesian_coordinates.x, cartesian_coordinates.y, 1.0f};
+		return { cartesian_coordinates.x, cartesian_coordinates.y, 1.0f };
 	}
 
 	[[nodiscard]] constexpr cartesian_coordinates_type to_cartesian_coordinates(
@@ -30,7 +30,7 @@ namespace irglab
 
 	[[nodiscard]] constexpr homogeneous_line_type get_line_at_y(const float y_coordinate) noexcept
 	{
-		return {0, 1, -y_coordinate};
+		return { 0, 1, -y_coordinate };
 	}
 
 	[[nodiscard]] constexpr void normalize(homogeneous_coordinates_type& homogeneous_coordinates)
@@ -57,7 +57,7 @@ namespace irglab
 	[[nodiscard]] inline std::vector<homogeneous_line_type> get_successive_point_lines(
 		std::vector<homogeneous_point_type> points)
 	{
-		std::vector<homogeneous_line_type> result{points.size()};
+		std::vector<homogeneous_line_type> result{ points.size() };
 
 		for (size_t index = 0; index < points.size(); ++index)
 		{
@@ -73,17 +73,17 @@ namespace irglab
 		const std::vector<homogeneous_line_type>& lines,
 		const homogeneous_line_type& line)
 	{
-		std::vector<homogeneous_point_type> result{lines.size()};
+		std::vector<homogeneous_point_type> result{ lines.size() };
 
 		std::transform(lines.begin(), lines.end(), result.begin(),
-		               [line](const homogeneous_line_type& other)
-		               {
-			               return get_intersection(line, other);
-		               });
+			[line](const homogeneous_line_type& other)
+			{
+				return get_intersection(line, other);
+			});
 
 		return result;
 	}
-	
+
 	struct convex_polygon
 	{
 		using vertex_type = homogeneous_point_type;
@@ -138,8 +138,8 @@ namespace irglab
 		{
 			const auto y_line = get_line_at_y(y_coordinate);
 
-			homogeneous_point_type max_left{-FLT_MAX, 0, 1};
-			for (const auto& left_intersection : 
+			homogeneous_point_type max_left{ -FLT_MAX, 0, 1 };
+			for (const auto& left_intersection :
 				get_intersections(left_edges_, y_line))
 			{
 				if (left_intersection.x / left_intersection.z > max_left.x / max_left.z)
@@ -148,8 +148,8 @@ namespace irglab
 				}
 			}
 
-			homogeneous_point_type min_right{FLT_MAX, 0, 1};
-			for (const auto& right_intersection : 
+			homogeneous_point_type min_right{ FLT_MAX, 0, 1 };
+			for (const auto& right_intersection :
 				get_intersections(right_edges_, y_line))
 			{
 				if (right_intersection.x / right_intersection.z < min_right.x / min_right.z)
@@ -206,10 +206,10 @@ namespace irglab
 			for (size_t index = 0; index < vertices_.size(); ++index)
 			{
 				const auto& first_vertex = vertices_[index];
-				const auto& second_vertex = 
+				const auto& second_vertex =
 					vertices_[(index + 1) % vertices_.size()];
-				
-				if (first_vertex.y / first_vertex.z > 
+
+				if (first_vertex.y / first_vertex.z >
 					second_vertex.y / second_vertex.z ==
 					direction_ == left_or_right)
 				{
@@ -263,7 +263,7 @@ namespace irglab
 					points[index],
 					points[(index + 1) % points.size()],
 					points[(index + 2) % points.size()]);
-				
+
 				if (circular_direction != current_direction)
 				{
 					return false;
@@ -317,7 +317,7 @@ namespace irglab
 			return convex_polygon;
 		}
 	};
-	
+
 	inline std::ostream& operator <<(std::ostream& output_stream,
 		const convex_polygon& convex_polygon)
 	{
@@ -327,10 +327,11 @@ namespace irglab
 		output_stream << "Vertices: " << std::endl;
 		for (const auto& vertex : convex_polygon.vertices_)
 		{
-			const auto cartesian_coordinates = to_cartesian_coordinates(vertex);
-			
+			const auto cartesian_coordinates =
+				to_cartesian_coordinates(vertex);
+
 			output_stream <<
-				"x: " << cartesian_coordinates.x << 
+				"x: " << cartesian_coordinates.x <<
 				" y: " << cartesian_coordinates.y << std::endl;
 		}
 
