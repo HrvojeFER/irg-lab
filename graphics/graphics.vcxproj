@@ -220,8 +220,6 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
   </ItemGroup>
   <ItemGroup>
     <None Include="pre-build.ps1" />
-    <None Include="shaders\fragment_shader.frag" />
-    <None Include="shaders\vertex_shader.vert" />
     <None Include="vulkan.ruleset" />
   </ItemGroup>
   <ItemGroup>

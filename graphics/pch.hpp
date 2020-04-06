@@ -12,6 +12,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cctype>
+#include <regex>
 
 // UINT32_MAX and UINT64 needed
 #include <cstdint>

@@ -78,8 +78,6 @@
   <ItemGroup>
     <None Include="pre-build.ps1" />
     <None Include="vulkan.ruleset" />
-    <None Include="shaders\fragment_shader.frag" />
-    <None Include="shaders\vertex_shader.vert" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="vk_layer_settings.txt" />

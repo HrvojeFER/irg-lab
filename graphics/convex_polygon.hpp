@@ -7,57 +7,58 @@
 
 namespace irglab::two_dimensional
 {
-	using cartesian_coordinates_type = glm::vec2;
-	using homogeneous_coordinates_type = glm::vec3;
+	using cartesian_coordinates = glm::vec2;
+	using homogeneous_coordinates = glm::vec3;
 
-	using homogeneous_point_type = homogeneous_coordinates_type;
-	using homogeneous_line_type = homogeneous_coordinates_type;
+	using point = homogeneous_coordinates;
+	using line = homogeneous_coordinates;
 
-	[[nodiscard]] constexpr homogeneous_coordinates_type to_homogeneous_coordinates(
-		const cartesian_coordinates_type& cartesian_coordinates)
+	[[nodiscard]] constexpr homogeneous_coordinates to_homogeneous_coordinates(
+		const cartesian_coordinates& cartesian_coordinates)
 	{
 		return { cartesian_coordinates.x, cartesian_coordinates.y, 1.0f };
 	}
 
-	[[nodiscard]] constexpr cartesian_coordinates_type to_cartesian_coordinates(
-		const homogeneous_coordinates_type& homogeneous_coordinates)
+	[[nodiscard]] constexpr cartesian_coordinates to_cartesian_coordinates(
+		const homogeneous_coordinates& homogeneous_coordinates)
 	{
-		return {
+		return
+		{
 			homogeneous_coordinates.x / homogeneous_coordinates.z,
 			homogeneous_coordinates.y / homogeneous_coordinates.z
 		};
 	}
 
-	[[nodiscard]] constexpr homogeneous_line_type get_line_at_y(const float y_coordinate) noexcept
+	[[nodiscard]] constexpr line get_line_at_y(const float y_coordinate) noexcept
 	{
 		return { 0, 1, -y_coordinate };
 	}
 
-	[[nodiscard]] constexpr void normalize(homogeneous_coordinates_type& homogeneous_coordinates)
+	[[nodiscard]] constexpr void normalize(homogeneous_coordinates& homogeneous_coordinates)
 	{
 		homogeneous_coordinates.x = homogeneous_coordinates.x / homogeneous_coordinates.z;
 		homogeneous_coordinates.y = homogeneous_coordinates.y / homogeneous_coordinates.z;
 		homogeneous_coordinates.z = 1.0f;
 	}
 
-	[[nodiscard]] inline homogeneous_point_type get_intersection(
-		const homogeneous_line_type& line_a,
-		const homogeneous_line_type& line_b)
+	[[nodiscard]] inline point get_intersection(
+		const line& line_a,
+		const line& line_b)
 	{
 		return cross(line_a, line_b);
 	}
 
-	[[nodiscard]] inline homogeneous_line_type get_connecting_line(
-		const homogeneous_point_type& first,
-		const homogeneous_point_type& second)
+	[[nodiscard]] inline line get_connecting_line(
+		const point& first,
+		const point& second)
 	{
 		return cross(first, second);
 	}
 
-	[[nodiscard]] inline std::vector<homogeneous_line_type> get_successive_point_lines(
-		std::vector<homogeneous_point_type> points)
+	[[nodiscard]] inline std::vector<line> get_successive_point_lines(
+		std::vector<point> points)
 	{
-		std::vector<homogeneous_line_type> result{ points.size() };
+		std::vector<line> result{ points.size() };
 
 		for (size_t index = 0; index < points.size(); ++index)
 		{
@@ -69,14 +70,14 @@ namespace irglab::two_dimensional
 		return result;
 	}
 
-	[[nodiscard]] inline std::vector<homogeneous_point_type> get_intersections(
-		const std::vector<homogeneous_line_type>& lines,
-		const homogeneous_line_type& line)
+	[[nodiscard]] inline std::vector<point> get_intersections(
+		const std::vector<line>& lines,
+		const line& line)
 	{
-		std::vector<homogeneous_point_type> result{ lines.size() };
+		std::vector<point> result{ lines.size() };
 
 		std::transform(lines.begin(), lines.end(), result.begin(),
-			[line](const homogeneous_line_type& other)
+			[line](const two_dimensional::line& other)
 			{
 				return get_intersection(line, other);
 			});
@@ -86,23 +87,22 @@ namespace irglab::two_dimensional
 
 	struct convex_polygon
 	{
-		using vertex_type = homogeneous_point_type;
-		using edge_type = homogeneous_line_type;
+		using vertex = point;
+		using edge = line;
+
+		using direction = bool;
+
+		static inline const direction clockwise = true;
+		static inline const direction counterclockwise = false;
+
+		static inline const direction right = false;
+		static inline const direction left = true;
+
+		static inline const direction top = true;
+		static inline const direction bottom = false;
 
 
-		using direction_type = bool;
-
-		static inline const direction_type clockwise = true;
-		static inline const direction_type counterclockwise = false;
-
-		static inline const direction_type right = false;
-		static inline const direction_type left = true;
-
-		static inline const direction_type top = true;
-		static inline const direction_type bottom = false;
-
-
-		explicit convex_polygon(const std::vector<homogeneous_point_type>& points) :
+		explicit convex_polygon(const std::vector<point>& points) :
 			vertices_{ take_prefix_forming_convex_polygon(points) },
 			direction_{ get_direction(vertices_[0], vertices_[1], vertices_[2]) },
 			edges_{ get_successive_point_lines(vertices_) },
@@ -114,7 +114,7 @@ namespace irglab::two_dimensional
 			const convex_polygon& convex_polygon);
 
 
-		[[nodiscard]] bool is_inside(const homogeneous_point_type& point) const
+		[[nodiscard]] bool is_inside(const point& point) const
 		{
 			for (const auto& edge : edges_)
 			{
@@ -130,15 +130,15 @@ namespace irglab::two_dimensional
 
 		struct edge_intersections
 		{
-			const homogeneous_point_type left;
-			const homogeneous_point_type right;
+			const point left;
+			const point right;
 		};
 
 		[[nodiscard]] edge_intersections get_edge_intersections_at_y(const float y_coordinate) const
 		{
 			const auto y_line = get_line_at_y(y_coordinate);
 
-			homogeneous_point_type max_left{ -FLT_MAX, 0, 1 };
+			point max_left{ -FLT_MAX, 0, 1 };
 			for (const auto& left_intersection :
 				get_intersections(left_edges_, y_line))
 			{
@@ -148,7 +148,7 @@ namespace irglab::two_dimensional
 				}
 			}
 
-			homogeneous_point_type min_right{ FLT_MAX, 0, 1 };
+			point min_right{ FLT_MAX, 0, 1 };
 			for (const auto& right_intersection :
 				get_intersections(right_edges_, y_line))
 			{
@@ -161,15 +161,15 @@ namespace irglab::two_dimensional
 			return { max_left, min_right };
 		}
 
-		[[nodiscard]] std::vector<homogeneous_point_type> get_all_edge_line_intersections_at_y(
+		[[nodiscard]] std::vector<point> get_all_edge_line_intersections_at_y(
 			const float y_coordinate) const
 		{
 			return get_intersections(edges_, get_line_at_y(y_coordinate));
 		}
 
-		[[nodiscard]] vertex_type get_vertex_on(const direction_type top_or_bottom) const
+		[[nodiscard]] vertex get_vertex_on(const direction top_or_bottom) const
 		{
-			auto result = vertices_[0];
+			vertex result{ 0.0f, top_or_bottom ? -FLT_MAX : FLT_MAX, 1.0f };
 
 			for (const auto& vertex : vertices_)
 			{
@@ -182,26 +182,26 @@ namespace irglab::two_dimensional
 			return result;
 		}
 
-		[[nodiscard]] std::vector<vertex_type> get_vertices() const
+		[[nodiscard]] std::vector<vertex> get_vertices() const
 		{
 			return vertices_;
 		}
 
 	private:
-		std::vector<vertex_type> vertices_;
+		std::vector<vertex> vertices_;
 
-		direction_type direction_;
+		direction direction_;
 
-		std::vector<edge_type> edges_;
-		// stored for fast intersection calculations
-		std::vector<edge_type> left_edges_;
-		std::vector<edge_type> right_edges_;
+		std::vector<edge> edges_;
+		// stored for faster intersection calculations
+		std::vector<edge> left_edges_;
+		std::vector<edge> right_edges_;
 
 
-		[[nodiscard]] std::vector<edge_type> get_edges_from_direction(
-			const direction_type left_or_right) const
+		[[nodiscard]] std::vector<edge> get_edges_from_direction(
+			const direction left_or_right) const
 		{
-			std::vector<edge_type> result{};
+			std::vector<edge> result{};
 
 			for (size_t index = 0; index < vertices_.size(); ++index)
 			{
@@ -221,9 +221,9 @@ namespace irglab::two_dimensional
 		}
 
 
-		[[nodiscard]] static direction_type get_direction(
-			const edge_type& edge,
-			const homogeneous_point_type& point)
+		[[nodiscard]] static direction get_direction(
+			const edge& edge,
+			const point& point)
 		{
 			if (const auto relation = dot(point, edge);
 				relation != 0)
@@ -234,10 +234,10 @@ namespace irglab::two_dimensional
 			throw std::invalid_argument("Point is collinear with the edge.");
 		}
 
-		[[nodiscard]] static direction_type get_direction(
-			const homogeneous_point_type& first,
-			const homogeneous_point_type& second,
-			const homogeneous_point_type& third)
+		[[nodiscard]] static direction get_direction(
+			const point& first,
+			const point& second,
+			const point& third)
 		{
 			if (const auto relation = dot(third, cross(first, second));
 				relation != 0)
@@ -249,8 +249,8 @@ namespace irglab::two_dimensional
 		}
 
 		[[nodiscard]] static bool are_convex_polygon_in_direction(
-			const std::vector<vertex_type>& points,
-			const direction_type circular_direction)
+			const std::vector<vertex>& points,
+			const direction circular_direction)
 		{
 			if (points.size() < 3)
 			{
@@ -259,7 +259,7 @@ namespace irglab::two_dimensional
 
 			for (size_t index = 0; index < points.size(); ++index)
 			{
-				const auto current_direction = get_direction(
+				const auto&& current_direction = get_direction(
 					points[index],
 					points[(index + 1) % points.size()],
 					points[(index + 2) % points.size()]);
@@ -273,8 +273,8 @@ namespace irglab::two_dimensional
 			return true;
 		}
 
-		[[nodiscard]] static std::vector<vertex_type> take_prefix_forming_convex_polygon(
-			const std::vector<homogeneous_point_type>& points)
+		[[nodiscard]] static std::vector<vertex> take_prefix_forming_convex_polygon(
+			const std::vector<point>& points)
 		{
 			if (points.size() < 3)
 			{
@@ -288,7 +288,7 @@ namespace irglab::two_dimensional
 				points[2]
 			};
 
-			auto direction = get_direction(
+			auto&& direction = get_direction(
 				convex_polygon[0],
 				convex_polygon[1],
 				convex_polygon[2]);
@@ -304,11 +304,7 @@ namespace irglab::two_dimensional
 
 					if (!are_convex_polygon_in_direction(convex_polygon, direction))
 					{
-						convex_polygon =
-						{
-							convex_polygon.begin(),
-							convex_polygon.end() - 1
-						};
+						convex_polygon.pop_back();
 						break;
 					}
 				}
@@ -327,7 +323,7 @@ namespace irglab::two_dimensional
 		output_stream << "Vertices: " << std::endl;
 		for (const auto& vertex : convex_polygon.vertices_)
 		{
-			const auto cartesian_coordinates =
+			const auto&& cartesian_coordinates =
 				to_cartesian_coordinates(vertex);
 
 			output_stream <<

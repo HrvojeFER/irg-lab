@@ -19,6 +19,53 @@ namespace irglab
 	private:
         void pre_run() override
         {
+            std::cout << "Welcome to the Convex Polygon Artisan Program (TM) " <<
+                "(abbreviated C-PAP from now on and pronounced /'si:paep/, " <<
+                "not to be confused with Continuous positive airway pressure), " <<
+                "where I take your points and fill the joints! " <<
+                "(To form a convex polygon, of course.)" << std::endl;
+            std::cout << "If you don't know what a convex polygon is, " <<
+                "you can read the wikipedia page about it at the following link: " << std::endl;
+            std::cout << "https://en.wikipedia.org/wiki/Convex_polygon" << std::endl << std::endl;
+            std::cout << "You don't HAVE to read it. Its up to you to decide on that." << std::endl <<
+                std::endl;
+
+            std::cout << "Press any key to continue onto the controls..." << std::endl << std::endl;
+            std::cin.get();
+
+            std::cout << "On to the controls, then!" << std::endl;
+            std::cout << "\tTo set the points, " <<
+                "click on the drawing window with your left mouse button." << std::endl;
+            std::cout << "\tTo reset the points, hit space." << std::endl;
+            std::cout << "WARNING: Do not LITERALLY HIT space! It is just a common expression." <<
+                std::endl <<
+                "Press it gently. C-PAP (TM) is not responsible for " <<
+                "any damage to your hardware caused by being a barbarian." << std::endl;
+            std::cout << "\tTo draw a convex polygon with the set points press enter." << std::endl;
+            std::cout << "I just now realized that I could have said 'press space' " <<
+                "instead of 'hit space', haha. I'm sorry for the confusing instructions. " <<
+                std::endl <<
+                "I hope your keyboard is fine, because if it isn't, you can't run " <<
+                "C-PAP (TM) properly and I wouldn't want that to happen. :(" << std::endl;
+            std::cout << "I will try to make a convex polygon " <<
+                "with the highest number of the points you set as I possibly can." << std::endl;
+            std::cout << "I will be at my best if you set the points in a circular motion." <<
+                std::endl;
+            std::cout << "\tTo check if a point is inside the drawn convex polygon, " <<
+                "click on the drawing screen with the right mouse button." << std::endl;
+            std::cout << "\tTo reset the convex polygon, press delete." << std::endl << std::endl;
+
+            std::cout << "Press any key to indicate that you are sill alive and " <<
+                "that you understood all of that in spite of " <<
+                "the obnoxious tries at making you laugh..." <<
+                std::endl << std::endl;
+            std::cin.get();
+
+            std::cout << "That's it! You are now a fully capable C-PAP(TM) user! " <<
+                "I should tell the staff to make some kind of certificate for this." << std::endl;
+            std::cout << "Have fun! :)" << std::endl << std::endl;
+
+        	
             window_.on_mouse_button(GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS,
                 [&](const window::cursor_position& cursor_position)
                 {
@@ -83,12 +130,12 @@ namespace irglab
             		{
                         cursor_positions_.clear();
             			
-                        std::cerr << "APP ERROR: " << exception.what() << std::endl
+                        std::cerr << "C-PAP(TM) ERROR: " << exception.what() << std::endl
                             << "Stored points have been reset." << std::endl << std::endl;
             		}
             		catch (const std::range_error& exception)
             		{
-                        std::cerr << "APP ERROR: " << exception.what() << std::endl
+                        std::cerr << "C-PAP(TM) ERROR: " << exception.what() << std::endl
                             << "Set more points, please." << std::endl << std::endl;
             		}
                 });
@@ -127,53 +174,6 @@ namespace irglab
 
                     artist_.set_lines_to_draw({});
                 });
-
-        	
-            std::cout << "Welcome to the Convex Polygon Artisan Program (TM) " << 
-                "(abbreviated C-PAP from now on and pronounced /'si:paep/, " << 
-                "not to be confused with Continuous positive airway pressure), " <<
-                "where I take your points and fill the joints! " << 
-                "(To form a convex polygon, of course.)" << std::endl;
-            std::cout << "If you don't know what a convex polygon is, " <<
-                "you can read the wikipedia page about it at the following link: " << std::endl;
-            std::cout << "https://en.wikipedia.org/wiki/Convex_polygon" << std::endl << std::endl;
-            std::cout << "You don't HAVE to read it. Its up to you to decide on that." << std::endl << 
-                std::endl;
-
-            std::cout << "Press any key to continue onto the controls..." << std::endl << std::endl;
-            std::cin.get();
-
-            std::cout << "On to the controls, then!" << std::endl;
-            std::cout << "\tTo set the points, " << 
-                "click on the drawing window with your left mouse button." << std::endl;
-            std::cout << "\tTo reset the points, hit space." << std::endl;
-            std::cout << "WARNING: Do not LITERALLY HIT space! It is just a common expression." << 
-                std::endl <<
-                "Press it gently. C-PAP (TM) is not responsible for " << 
-                "any damage to your hardware caused by being a barbarian." << std::endl;
-            std::cout << "\tTo draw a convex polygon with the set points press enter." << std::endl;
-            std::cout << "I just now realized that I could have said 'press space' " <<
-                "instead of 'hit space', haha. I'm sorry for the confusing instructions. " <<
-                std::endl <<
-                "I hope your keyboard is fine, because if it isn't, you can't run " << 
-                "C-PAP (TM) properly and I wouldn't want that to happen. :(" << std::endl;
-            std::cout << "I will try to make a convex polygon " <<
-                "with the highest number of the points you set as I possibly can." << std::endl;
-            std::cout << "I will be at my best if you set the points in a circular motion." <<
-                std::endl;
-            std::cout << "\tTo check if a point is inside the drawn convex polygon, " << 
-                "click on the drawing screen with the right mouse button." << std::endl;
-            std::cout << "\tTo reset the convex polygon, press delete." << std::endl << std::endl;
-
-            std::cout << "Press any key to indicate that you are sill alive and " << 
-                "that you understood all of that in spite of " << 
-                "the obnoxious tries at making you laugh..." << 
-                std::endl << std::endl;
-            std::cin.get();
-        	
-        	std::cout << "That's it! You are now a fully capable C-PAP(TM) user! " << 
-                "I should tell the staff to make some kind of certificate for this." << std::endl;
-            std::cout << "Have fun! :)" << std::endl << std::endl;
         }
 		
         std::vector<window::cursor_position> cursor_positions_{ 0 };
@@ -246,7 +246,7 @@ namespace irglab
 		[[nodiscard]] two_dimensional::convex_polygon get_convex_polygon_from_cursor_positions(
             const std::vector<window::cursor_position>& cursor_positions) const
 		{
-            std::vector<two_dimensional::homogeneous_point_type> points{ cursor_positions.size() };
+            std::vector<two_dimensional::point> points{ cursor_positions.size() };
 
             std::transform(
                 cursor_positions.begin(),
@@ -260,14 +260,14 @@ namespace irglab
 			return two_dimensional::convex_polygon{ points };
 		}
 
-		[[nodiscard]] two_dimensional::homogeneous_coordinates_type to_homogeneous_coordinates(
+		[[nodiscard]] two_dimensional::homogeneous_coordinates to_homogeneous_coordinates(
             const window::cursor_position& cursor_position) const
 		{
             return two_dimensional::to_homogeneous_coordinates(
                 to_vulkan_friendly_coordinates(cursor_position));
 		}
 
-        [[nodiscard]] two_dimensional::cartesian_coordinates_type to_vulkan_friendly_coordinates(
+        [[nodiscard]] two_dimensional::cartesian_coordinates to_vulkan_friendly_coordinates(
             const window::cursor_position& cursor_position) const
         {
             const auto window_extent = window_.query_extent();
@@ -275,7 +275,7 @@ namespace irglab
             const auto x = 2 * (cursor_position.x / window_extent.width) - 1;
             const auto y = 2 * (cursor_position.y / window_extent.height) - 1;
 
-            const two_dimensional::cartesian_coordinates_type vulkan_friendly{ x, y };
+            const two_dimensional::cartesian_coordinates vulkan_friendly{ x, y };
 
             return vulkan_friendly;
         }

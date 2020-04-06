@@ -68,8 +68,8 @@ namespace irglab
                 return;
             }
 
-			unsigned int image_index;
 			
+			unsigned int image_index;
 			try
 			{
 				image_index = device_->acquireNextImageKHR(
@@ -107,6 +107,7 @@ namespace irglab
 			
             device_->resetFences(sync_.fence(in_flight, current_frame_));
 
+			
 			std::array<vk::PipelineStageFlags, 1> wait_stages
 			{
 				vk::PipelineStageFlagBits::eColorAttachmentOutput
@@ -125,8 +126,8 @@ namespace irglab
                 },
                 sync_.fence(in_flight, current_frame_));
 
-			vk::Result present_result;
 			
+			vk::Result present_result;
             try
             {
 				present_result = device_.present_queue.presentKHR(
@@ -180,6 +181,7 @@ namespace irglab
 			{
 				throw std::runtime_error("Failed to present image.");
 			}
+
 			
             current_frame_ = (current_frame_ + 1) % max_frames_in_flight;
         }
