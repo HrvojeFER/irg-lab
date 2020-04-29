@@ -213,8 +213,12 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClInclude Include="extensions.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="pipeline.hpp" />
+    <ClInclude Include="three_dimensional_primitives.hpp" />
+    <ClInclude Include="scene.hpp" />
     <ClInclude Include="swapchain.hpp" />
     <ClInclude Include="synchronizer.hpp" />
+    <ClInclude Include="three_dimensional_triangle.hpp" />
+    <ClInclude Include="two_dimensional_primitives.hpp" />
     <ClInclude Include="vertex_manager.hpp" />
     <ClInclude Include="window.hpp" />
   </ItemGroup>
