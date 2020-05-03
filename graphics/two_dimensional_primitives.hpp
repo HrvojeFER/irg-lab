@@ -27,16 +27,16 @@ namespace irglab::two_dimensional
 		};
 	}
 
-	[[nodiscard]] constexpr line get_line_at_y(const float y_coordinate) noexcept
-	{
-		return { 0, 1, -y_coordinate };
-	}
-
 	[[nodiscard]] constexpr void normalize(homogeneous_coordinates& homogeneous_coordinates)
 	{
 		homogeneous_coordinates.x = homogeneous_coordinates.x / homogeneous_coordinates.z;
 		homogeneous_coordinates.y = homogeneous_coordinates.y / homogeneous_coordinates.z;
 		homogeneous_coordinates.z = 1.0f;
+	}
+
+	[[nodiscard]] constexpr line get_line_at_y(const float y_coordinate) noexcept
+	{
+		return { 0, 1, -y_coordinate };
 	}
 
 	[[nodiscard]] inline point get_intersection(

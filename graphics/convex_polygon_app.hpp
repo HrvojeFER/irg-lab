@@ -7,6 +7,11 @@
 
 #include "app_base.hpp"
 
+
+#include "direction.hpp"
+
+#include "wireframe.hpp"
+
 #include "convex_polygon.hpp"
 
 
@@ -112,7 +117,7 @@ namespace irglab
                             convex_polygon_.value() << std::endl;
 
                         auto edges_for_drawing =
-                            get_edges_for_drawing_from_convex_polygon(convex_polygon_.value());
+                            get_wires_for_drawing(convex_polygon_.value());
 
                         auto lines_for_drawing =
                             get_lines_for_drawing_from_convex_polygon(convex_polygon_.value());
@@ -122,7 +127,7 @@ namespace irglab
                             edges_for_drawing.begin(),
                             edges_for_drawing.end());
 
-            			artist_.set_lines_to_draw(lines_for_drawing);
+            			artist_.set_wires_to_draw(lines_for_drawing);
 
                         cursor_positions_.clear();
                     }
@@ -145,8 +150,7 @@ namespace irglab
                 {
                     if (convex_polygon_.has_value())
                     {
-                        if (convex_polygon_.value().is_inside(
-                            to_homogeneous_coordinates(cursor_position)))
+                        if (to_homogeneous_coordinates(cursor_position) < convex_polygon_.value())
                         {
                             std::cout << "Point at x: " << cursor_position.x << 
                                 " y: " << cursor_position.y <<
@@ -172,24 +176,24 @@ namespace irglab
             	
                     convex_polygon_.reset();
 
-                    artist_.set_lines_to_draw({});
+                    artist_.set_wires_to_draw({});
                 });
         }
 		
         std::vector<window::cursor_position> cursor_positions_{ 0 };
         std::optional<two_dimensional::convex_polygon> convex_polygon_;
 
-		[[nodiscard]] std::vector<artist::line> get_lines_for_drawing_from_convex_polygon(
+		[[nodiscard]] std::vector<artist::wire> get_lines_for_drawing_from_convex_polygon(
             const two_dimensional::convex_polygon& convex_polygon) const
 		{
             const auto top =
-                convex_polygon.get_vertex_on(two_dimensional::convex_polygon::top).y;
+                convex_polygon.get_vertex_on(irglab::top).y;
             const auto bottom =
-                convex_polygon.get_vertex_on(two_dimensional::convex_polygon::bottom).y;
+                convex_polygon.get_vertex_on(irglab::bottom).y;
 
             const auto step = 2.0f / static_cast<float>(window_.query_extent().height);
 
-            std::vector<artist::line> lines_for_drawing{};
+            std::vector<artist::wire> lines_for_drawing{};
 
             for (
                 auto y_coordinate = bottom;
@@ -218,29 +222,34 @@ namespace irglab
             return lines_for_drawing;
 		}
 
-		[[nodiscard]] static std::vector<artist::line> get_edges_for_drawing_from_convex_polygon(
+		[[nodiscard]] static std::vector<artist::wire> get_wires_for_drawing(
 			const two_dimensional::convex_polygon& convex_polygon)
 		{
-            const auto vertices = convex_polygon.get_vertices();
-            std::vector<artist::line> edges_for_drawing{ vertices.size() };
-			
-			for (size_t index = 0 ; index < vertices.size() ; ++index)
-			{
-                edges_for_drawing.push_back(
-                {
-                    {
-	                    two_dimensional::to_cartesian_coordinates(vertices[index]),
-						{1.0f, 0.6f, 0.0f}
-                    },
-                	{
-	                    two_dimensional::to_cartesian_coordinates(
-                            vertices[(index + 1) % vertices.size()]),
-                        {0.8f, 0.8f, 0.0f}
-                    }
-                });
-			}
+            two_dimensional::wireframe wireframe{};
+            wireframe += convex_polygon;
 
-            return edges_for_drawing;
+            const auto points = wireframe.get_points();
+            std::vector<artist::wire> artist_wires{ wireframe.wires.size() };
+            std::transform(
+                wireframe.wires.begin(), 
+                wireframe.wires.end(), 
+                artist_wires.begin(),
+                [](const two_dimensional::wire& wire) -> artist::wire
+                {
+                    return
+                    {
+	                    {
+	                        wire.begin,
+	                        {1.0f, 0.6f, 0.0f}
+	                    },
+                        {
+                        	wire.end,
+							{ 0.6f, 0.0f, 1.0f }
+                        }
+                    };
+                });
+
+            return artist_wires;
 		}
 		
 		[[nodiscard]] two_dimensional::convex_polygon get_convex_polygon_from_cursor_positions(
@@ -257,7 +266,7 @@ namespace irglab
                     return to_homogeneous_coordinates(cursor_position);
                 });
 
-			return two_dimensional::convex_polygon{ points };
+			return two_dimensional::convex_polygon{ points.begin(), points.end() };
 		}
 
 		[[nodiscard]] two_dimensional::homogeneous_coordinates to_homogeneous_coordinates(

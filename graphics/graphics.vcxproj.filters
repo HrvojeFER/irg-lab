@@ -25,6 +25,9 @@
     <Filter Include="Header Files\environment">
       <UniqueIdentifier>{685e1b48-e55d-4328-a691-fa522696af27}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\geometry\bodies">
+      <UniqueIdentifier>{a2908fcc-ebe0-43fb-ada2-c76f9e18ccb2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -41,16 +44,7 @@
     <ClInclude Include="extensions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="body.hpp">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
     <ClInclude Include="convex_polygon.hpp">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="three_dimensional_primitives.hpp">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="two_dimensional_primitives.hpp">
       <Filter>Header Files\geometry</Filter>
     </ClInclude>
     <ClInclude Include="synchronizer.hpp">
@@ -95,13 +89,38 @@
     <ClInclude Include="window.hpp">
       <Filter>Header Files\environment</Filter>
     </ClInclude>
-    <ClInclude Include="three_dimensional_triangle.hpp">
+    <ClInclude Include="direction.hpp">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="triangle.hpp">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="primitives.hpp">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="transformations.hpp">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="wireframe.hpp">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="bounds.hpp">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="tetrahedron.hpp">
+      <Filter>Header Files\geometry\bodies</Filter>
+    </ClInclude>
+    <ClInclude Include="convex_body.hpp">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="wire.hpp">
       <Filter>Header Files\geometry</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="pre-build.ps1" />
     <None Include="vulkan.ruleset" />
+    <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="vk_layer_settings.txt" />

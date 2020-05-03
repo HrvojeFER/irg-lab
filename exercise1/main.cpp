@@ -9,7 +9,7 @@ void print(MathType value)
 template <class ... MathType>
 void print_many(MathType ... params)
 {
-	for (auto value : {params...})
+	for (auto value : { params ... })
 	{
 		print(value);
 	}
@@ -71,7 +71,7 @@ inline glm::vec3 get_barycentric(const glm::mat3x3& triangle, const glm::vec3& p
 	return point * inverse(triangle);
 }
 
-int main()
+int main()  // NOLINT(bugprone-exception-escape)
 {
 	print_many(v1, v2, v3, v4);
 	std::cout << s << std::endl;
@@ -80,6 +80,8 @@ int main()
 	std::cout << std::endl;
 	print_many(v);
 
+	glm::vec3 v32{};
+	v32 = v32 * hm1;
 	
 	float x1, y1, z1, r1;
 	float x2, y2, z2, r2;

@@ -42,7 +42,7 @@ namespace irglab
 	using semantic_map = std::unordered_map<semantic_key, ValueType, semantic_key_hasher>;
 
 	template<typename InnerType>
-	[[nodiscard]] std::vector<std::reference_wrapper<const InnerType>> dereference_handles(
+	[[nodiscard]] static std::vector<std::reference_wrapper<const InnerType>> dereference_handles(
 		const std::vector<vk::UniqueHandle<InnerType, vk::DispatchLoaderDynamic>>& handles)
 	{
 		std::vector<std::reference_wrapper<const InnerType>> result{};
@@ -53,6 +53,29 @@ namespace irglab
 		}
 
 		return result;
+	}
+
+	inline void left_trim(std::string& s) {
+		s.erase(
+			s.begin(), 
+			std::find_if(s.begin(), s.end(), 
+				[](const int character) {
+					return !std::isspace(character);
+				}));
+	}
+
+	inline void right_trim(std::string& string) {
+		string.erase(
+			std::find_if(string.rbegin(), string.rend(), 
+				[](const int character) {
+					return !std::isspace(character);
+				}).base(), 
+			string.end());
+	}
+
+	static void trim(std::string& s) {
+		left_trim(s);
+		right_trim(s);
 	}
 }
 

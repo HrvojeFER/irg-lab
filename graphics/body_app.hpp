@@ -6,8 +6,10 @@
 
 #include "app_base.hpp"
 #include "assets.hpp"
-#include "body.hpp"
 
+#include "wireframe.hpp"
+
+#include "convex_body.hpp"
 
 
 namespace irglab
@@ -16,23 +18,36 @@ namespace irglab
 	{
 		explicit body_app(const std::string& path_to_object_file = "./objects/tetrahedron.obj") :
 			app_base("Body"),
-			body_{ three_dimensional::body::parse(read_object_file(path_to_object_file)) }
-		{
-			body_.normalize(vulkan_friendly_limit);
-		}
+			body_{ get_body(path_to_object_file) } { }
 
 	private:
 		static inline const auto vulkan_friendly_limit = 1.0f;
 
-		three_dimensional::body body_;
+		[[nodiscard]] static three_dimensional::convex_body get_body(
+			const std::string& path_to_object_file)
+		{
+			const auto body_parsing_report =
+				three_dimensional::convex_body::parse(read_object_file(path_to_object_file));
+			std::cout << "Body parsing report:" << std::endl << 
+				body_parsing_report;
+			auto body = body_parsing_report.body;
+			
+			const auto bound_fit_report = body &= vulkan_friendly_limit;
+			std::cout << "Body fit report: " << std::endl << 
+				bound_fit_report;
 
-		
+			body.normalize();
+			return body;
+		}
+
+		three_dimensional::convex_body body_;
+
 		void pre_run() override
 		{
-			std::cout << "Welcome to the Body App (TM) where we draw a body and " <<
+			std::cout << "Welcome to the Body App (TM) where we draw a convex_body and " <<
 				"poke holes in it to see if a point is inside it. :)" << std::endl;
 			std::cout << "Just kidding, haha. We don't poke holes into bodies. " <<
-				"We take the normal of each plane of each polytope on the surface of the body and " <<
+				"We take the normal of each plane of each polytope on the surface of the convex_body and " <<
 				"determine whether or not a point is inside it using the magic of linear algebra." <<
 				std::endl;
 			std::cout << "You got that? It is EXTREMELY important to get what I said " <<
@@ -51,11 +66,11 @@ namespace irglab
 				"so you wouldn't get it, haha." << std::endl;
 			std::cout << "Even I don't know if I truly understand it, haha." << std::endl;
 			std::cout << "Ok, moving on..." << std::endl;
-			std::cout << "There should be another window with a body drawn on it, so " <<
+			std::cout << "There should be another window with a convex_body drawn on it, so " <<
 				"all you need to do is write down the cartesian coordinates of a single point" <<
 				"in three dimensions using floating point values in the range of <-1, 1> " << 
 				"separated by spaces, so that I can calculate " << 
-				"whether or not that point is in the body." <<
+				"whether or not that point is in the convex_body." <<
 				std::endl;
 			std::cout << "Simple, right?" << std::endl;
 			std::cout << "Ok, enter the coordinates below and press enter." << std::endl << std::endl;
@@ -65,7 +80,7 @@ namespace irglab
 
 			std::cin >> point.x >> point.y >> point.z;
 
-			if (body_.is_inside(point))
+			if (point < body_)
 			{
 				std::cout << "The point is inside the body." << std::endl;
 			}
@@ -79,55 +94,25 @@ namespace irglab
 		
 		void set_body_for_drawing() const
 		{
-			const auto&& body_triangles = body_.get_triangles();
-			std::vector<artist::line> lines_to_draw{ body_triangles.size() * 3 };
+			three_dimensional::wireframe wireframe{};
+			wireframe += body_;
+			wireframe.remove_duplicate_wires();
 
-			for (const auto& triangle : body_triangles)
-			{
-				const auto&& triangle_vertices = 
-					triangle.get_vertices();
-				
-				lines_to_draw.emplace_back(
-					artist::line
+			std::cout << wireframe << std::endl;
+			
+			const auto points = wireframe.get_points();
+			std::vector<vertex> vertices{ points.size() };
+			std::transform(points.begin(), points.end(), vertices.begin(),
+				[] (const three_dimensional::point& point) -> vertex
+				{
+					return
 					{
-						{
-							three_dimensional::to_cartesian_coordinates(triangle_vertices[0]),
-							{1.0f, 0.6f, 0.0f}
-						},
-						{
-							three_dimensional::to_cartesian_coordinates(triangle_vertices[1]),
-							{0.2f, 0.0f, 1.0f}
-						}
-					});
+						two_dimensional::to_cartesian_coordinates(point),
+						{1.0f, 0.6f, 0.0f}
+					};
+				});
 
-				lines_to_draw.emplace_back(
-					artist::line
-					{
-						{
-							three_dimensional::to_cartesian_coordinates(triangle_vertices[1]),
-							{1.0f, 0.6f, 0.0f}
-						},
-						{
-							three_dimensional::to_cartesian_coordinates(triangle_vertices[2]),
-							{0.2f, 0.0f, 1.0f}
-						}
-					});
-
-				lines_to_draw.emplace_back(
-					artist::line
-					{
-						{
-							three_dimensional::to_cartesian_coordinates(triangle_vertices[2]),
-							{1.0f, 0.6f, 0.0f}
-						},
-						{
-							three_dimensional::to_cartesian_coordinates(triangle_vertices[0]),
-							{0.2f, 0.0f, 1.0f}
-						}
-					});
-			}
-
-			artist_.set_lines_to_draw(lines_to_draw);
+			artist_.set_vertices_to_draw(vertices);
 		}
 	};
 }

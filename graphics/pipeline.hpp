@@ -217,7 +217,7 @@ namespace irglab
                 });
 
 #if !defined(NDEBUG)
-            std::cout << name << "shader module created" << std::endl;
+            std::cout << name << "Shader module created" << std::endl;
 #endif
 
             return result;

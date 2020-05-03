@@ -57,8 +57,10 @@ namespace irglab
         std::vector<std::string> result;
         for (std::string line; std::getline(file, line); )
 		{
-        	// Check if empty or contains only spaces
-        	if (!line.empty() && !(line.find_first_not_of(' ') == line.npos))
+        	// Check if empty or contains only whitespace
+        	if (!line.empty() && 
+                !(line.find_first_not_of(' ') == std::string::npos) && 
+                !(line.find_first_not_of('\t') == std::string::npos))
         	{
                 result.emplace_back(line);
         	}

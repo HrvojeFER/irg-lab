@@ -191,23 +191,22 @@ namespace irglab
 			device_->waitIdle();
 		}
 
-		struct line
+		using wire = std::pair<vertex, vertex>;
+
+		void set_wires_to_draw(const std::vector<wire>& wires) const
 		{
-			vertex start;
-			vertex end;
-		};
+			std::vector<vertex> vertices{ wires.size() * 2 };
 
-		void set_lines_to_draw(const std::vector<line>& lines) const
+			for (const auto& [start, end] : wires)
+				vertices.emplace_back(start),
+				vertices.emplace_back(end);
+
+			set_vertices_to_draw(std::move(vertices));
+		}
+
+		void set_vertices_to_draw(std::vector<vertex> vertices) const
 		{
-			std::vector<vertex> vertices{ lines.size() * 2 };
-
-			for (const auto& line : lines)
-			{
-				vertices.push_back(line.start);
-				vertices.push_back(line.end);
-			}
-
-			vertex_manager_.set_buffer(vertices);
+			vertex_manager_.set_buffer(std::move(vertices));
 		}
 		
 	private:

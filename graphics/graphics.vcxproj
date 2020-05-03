@@ -168,8 +168,11 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
-      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <Optimization>Full</Optimization>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -200,8 +203,9 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="body.hpp" />
+    <ClInclude Include="convex_body.hpp" />
     <ClInclude Include="body_app.hpp" />
+    <ClInclude Include="bounds.hpp" />
     <ClInclude Include="convex_polygon_app.hpp" />
     <ClInclude Include="app_base.hpp" />
     <ClInclude Include="artist.hpp" />
@@ -209,20 +213,25 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClInclude Include="convex_polygon.hpp" />
     <ClInclude Include="debug_manager.hpp" />
     <ClInclude Include="device.hpp" />
+    <ClInclude Include="direction.hpp" />
     <ClInclude Include="environment.hpp" />
     <ClInclude Include="extensions.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="pipeline.hpp" />
-    <ClInclude Include="three_dimensional_primitives.hpp" />
+    <ClInclude Include="primitives.hpp" />
     <ClInclude Include="scene.hpp" />
     <ClInclude Include="swapchain.hpp" />
     <ClInclude Include="synchronizer.hpp" />
-    <ClInclude Include="three_dimensional_triangle.hpp" />
-    <ClInclude Include="two_dimensional_primitives.hpp" />
+    <ClInclude Include="tetrahedron.hpp" />
+    <ClInclude Include="transformations.hpp" />
+    <ClInclude Include="triangle.hpp" />
     <ClInclude Include="vertex_manager.hpp" />
     <ClInclude Include="window.hpp" />
+    <ClInclude Include="wire.hpp" />
+    <ClInclude Include="wireframe.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="cpp.hint" />
     <None Include="pre-build.ps1" />
     <None Include="vulkan.ruleset" />
   </ItemGroup>

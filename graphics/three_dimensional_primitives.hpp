@@ -11,10 +11,9 @@ namespace irglab::three_dimensional
 	using point = homogeneous_coordinates;
 	using line = homogeneous_coordinates;
 	using plane = homogeneous_coordinates;
-	using parametric_plane = glm::mat3x4;
 	using plane_normal = glm::vec3;
 
-	using transform_matrix = glm::mat4;
+	using transformation_matrix = glm::mat4;
 
 	[[nodiscard]] constexpr homogeneous_coordinates to_homogeneous_coordinates(
 		const cartesian_coordinates& cartesian_coordinates)
@@ -74,31 +73,6 @@ namespace irglab::three_dimensional
 			normal.y,
 			normal.z,
 			-first_point.x * normal.x - first_point.y * normal.y - first_point.z * normal.z
-		};
-	}
-
-	[[nodiscard]] inline transform_matrix get_scale_transform_matrix(const float scale_factor)
-	{
-		return
-		{
-			scale_factor, 0.0f, 0.0f, 0.0f,
-			0.0f, scale_factor, 0.0f, 0.0f,
-			0.0f, 0.0f, scale_factor, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
-	}
-
-	[[nodiscard]] inline transform_matrix get_translate_transform_matrix(
-		const float dx,
-		const float dy,
-		const float dz)
-	{
-		return
-		{
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			dx, dy, dz, 1.0f
 		};
 	}
 }

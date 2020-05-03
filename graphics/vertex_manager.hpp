@@ -10,8 +10,11 @@
 namespace irglab
 {
 	struct vertex {
-		glm::vec2 position{ 0.0f, 0.0f };
-		glm::vec3 color{ 0.0f, 0.0f, 0.0f };
+		using position_vector = glm::vec2;
+		using color_vector = glm::vec3;
+		
+		position_vector position{ 0.0f, 0.0f };
+		color_vector color{ 0.0f, 0.0f, 0.0f };
 
 		[[nodiscard]] static std::vector<vk::VertexInputBindingDescription>
 			get_binding_descriptions()
@@ -50,7 +53,7 @@ namespace irglab
 	struct vertex_manager
 	{
 		// sizeof(float) = 4
-		// sizeof(vertex) = 2 * 4 + 3 * 4 = 20 - position + color
+		// sizeof(vertex) = 2 * 4 + 3 * 4 = 20 - position_vector + color
 		// buffer size = 20 * 3276 = 65520 < 65536 = 2^16
 		static inline const unsigned int vertex_count = 3276;
 		static inline const vk::DeviceSize buffer_size = sizeof(vertex) * vertex_count;
@@ -84,7 +87,7 @@ namespace irglab
 			return *vertex_buffer_;
 		}
 
-		void set_buffer(const std::vector<vertex>& vertices) const
+		void set_buffer(std::vector<vertex> vertices) const
 		{
 			auto staging_buffer{ create_buffer(vk::BufferUsageFlagBits::eTransferSrc) };
 			auto staging_buffer_memory{ allocate_buffer_memory(*staging_buffer) };
@@ -94,20 +97,14 @@ namespace irglab
 			std::cout << "Memory bound to staging buffer" << std::endl;
 #endif
 
-			const auto to_write = new vertex[vertex_count] { {} };
-
-			std::memcpy(to_write,
-				vertices.data(),
-				min(sizeof(vertex) * vertices.size(), buffer_size));
+			vertices.resize(vertex_count);
 
 			std::memcpy(
 				device_->mapMemory(*staging_buffer_memory, buffer_offset, buffer_size, {}),
-				to_write,
+				vertices.data(),
 				buffer_size);
 			device_->unmapMemory(*staging_buffer_memory);
 
-			delete[] to_write;
-			
 #if !defined(NDEBUG)
 			std::cout << "Vertices copied to staging buffer" << std::endl;
 #endif
