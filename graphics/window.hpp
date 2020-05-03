@@ -12,7 +12,7 @@ namespace irglab
 	struct window
 	{
 		static inline const std::string_view default_title{ "Window" };
-		static inline const vk::Extent2D default_initial_size{ 800, 600 };
+		static inline const vk::Extent2D default_initial_size{ 600, 600 };
 
 		const std::string_view title;
 

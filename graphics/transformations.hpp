@@ -11,11 +11,20 @@ namespace irglab
 {
 	template<size DimensionCount>
 	using transformation = irglab::matrix<DimensionCount + 1, DimensionCount + 1>;
+
+	// Columns are orthonormal vectors.
+	template<size DimensionCount>
+	using orthonormal_base = irglab::matrix<DimensionCount + 1, DimensionCount + 1>;
+
+	template<size DimensionCount>
+	using axis = irglab::vector<DimensionCount>;
 }
 
 namespace irglab::two_dimensional
 {
 	using transformation = irglab::transformation<dimension_count>;
+	using orthonormal_base = irglab::orthonormal_base<dimension_count>;
+	using axis = irglab::axis<dimension_count>;
 
 	[[nodiscard]] constexpr transformation get_scale_transformation(
 		const number scaling_factor) noexcept
@@ -78,6 +87,8 @@ namespace irglab::two_dimensional
 namespace irglab::three_dimensional
 {
 	using transformation = irglab::transformation<dimension_count>;
+	using orthonormal_base = irglab::orthonormal_base<dimension_count>;
+	using axis = irglab::axis<dimension_count>;
 
 	[[nodiscard]] constexpr transformation get_scale_transformation(
 		const number scaling_factor) noexcept
@@ -147,6 +158,34 @@ namespace irglab::three_dimensional
 			cosine, sine, 0.0f, 0.0f,
 			-sine, cosine, 0.0f, 0.0f,
 			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
+	}
+
+	// Following the Rodrigues' rotation formula.
+	[[nodiscard]] inline transformation get_rotation(const angle angle, const axis& axis) noexcept
+	{
+		// To avoid multiple calculations.
+		const auto sine = glm::sin(angle);
+		const auto cosine = glm::cos(angle);
+
+		return
+		{
+			cosine + axis.x * axis.x * (1 - cosine),
+			axis.x * axis.y * (1 - cosine) - axis.z * sine,
+			axis.y * sine + axis.x * axis.z * (1 - cosine),
+			0.0f,
+
+			axis.z * sine + axis.x * axis.y * (1 - cosine),
+			cosine + axis.y * axis.y * (1 - cosine),
+			-axis.x * sine + axis.y * axis.z * (1 - cosine),
+			0.0f,
+
+			-axis.y * sine + axis.x * axis.z * (1 - cosine),
+			axis.x * sine + axis.y * axis.z * (1 - cosine),
+			cosine + axis.z * axis.z * (1 - cosine),
+			0.0f,
+
 			0.0f, 0.0f, 0.0f, 1.0f
 		};
 	}

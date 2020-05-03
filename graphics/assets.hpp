@@ -25,7 +25,7 @@ namespace irglab
     [[nodiscard]] inline std::vector<char> read_shader_file(const std::string& path)
     {
 #if !defined (NDEBUG)
-        std::cout << "Reading shader file at: '" << path << "'.";
+        std::cout << "Reading shader file at: '" << path << "'." << std::endl;
 #endif
     	
     	// start at the end with std::ios:ate to get the size
@@ -46,7 +46,7 @@ namespace irglab
 
 	[[nodiscard]] static std::vector<std::string> read_object_file(const std::string& path)
 	{
-        std::cout << "Reading object file at: '" << path << "'.";
+        std::cout << "Reading object file at: '" << path << "'." << std::endl;
     	
         std::ifstream file{ path };
         if (!file.is_open())

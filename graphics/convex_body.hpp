@@ -19,36 +19,37 @@ namespace irglab
 	struct convex_body_internal
 	{
 		using triangle = triangle<DimensionCount>;
+		std::vector<triangle> triangles;
 
 		
 		constexpr explicit convex_body_internal(
 			const std::initializer_list<triangle>& triangles) noexcept :
-			triangles_{ triangles } { }
+			triangles{ triangles } { }
 
 		template<typename Iterator>
 		explicit convex_body_internal(const Iterator& begin, const Iterator& end) :
-			triangles_{ begin, end } { }
+			triangles{ begin, end } { }
 
 
 		constexpr void normalize()
 		{
-			for (auto& triangle : triangles_) triangle.normalize();
+			for (auto& triangle : triangles) triangle.normalize();
 		}
 		
 		constexpr void operator*=(const transformation<DimensionCount>& transformation) noexcept
 		{
-			for (auto& triangle : triangles_) triangle *= transformation;
+			for (auto& triangle : triangles) triangle *= transformation;
 		}
 
 		friend constexpr void operator|=(
 			bounds<DimensionCount>& bounds, const convex_body_internal& body) noexcept
 		{
-			for (const auto& triangle : body.triangles_) bounds |= triangle;
+			for (const auto& triangle : body.triangles) bounds |= triangle;
 		}
 
 		friend void operator+=(wireframe<DimensionCount>& wireframe, const convex_body_internal& body)
 		{
-			for (const auto& triangle : body.triangles_) wireframe += triangle;
+			for (const auto& triangle : body.triangles) wireframe += triangle;
 		}
 
 		
@@ -56,17 +57,13 @@ namespace irglab
 		{
 			output_stream << "Triangles:" << std::endl;
 
-			for (const auto& triangle : body.triangles_)
+			for (const auto& triangle : body.triangles)
 			{
 				output_stream << triangle << std::endl;
 			}
 
 			return output_stream << std::endl;
 		}
-
-		
-	protected:
-		std::vector<triangle> triangles_;
 	};
 
 
@@ -150,9 +147,7 @@ namespace irglab
 			const auto&& scale_transformation =
 				three_dimensional::get_scale_transformation(min_scaling_factor);
 
-			const auto transformation = scale_transformation * translation;
-
-			*this *= transformation;
+			*this *= translation * scale_transformation;
 
 			return
 			{
@@ -172,7 +167,7 @@ namespace irglab
 		[[nodiscard]] friend bool operator<(
 			const three_dimensional::point& point, const convex_body& body)
 		{
-			for (const auto& triangle : body.triangles_)
+			for (const auto& triangle : body.triangles)
 			{
 				if (not (point < triangle))
 				{

@@ -71,9 +71,6 @@
     <ClInclude Include="body_app.hpp">
       <Filter>Header Files\app</Filter>
     </ClInclude>
-    <ClInclude Include="scene.hpp">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
     <ClInclude Include="assets.hpp">
       <Filter>Header Files\environment</Filter>
     </ClInclude>
@@ -111,6 +108,9 @@
       <Filter>Header Files\geometry</Filter>
     </ClInclude>
     <ClInclude Include="wire.hpp">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="camera.hpp">
       <Filter>Header Files\geometry</Filter>
     </ClInclude>
   </ItemGroup>
