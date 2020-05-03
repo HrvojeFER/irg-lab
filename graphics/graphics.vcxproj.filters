@@ -71,9 +71,6 @@
     <ClInclude Include="body_app.hpp">
       <Filter>Header Files\app</Filter>
     </ClInclude>
-    <ClInclude Include="convex_polygon_app.hpp">
-      <Filter>Header Files\app</Filter>
-    </ClInclude>
     <ClInclude Include="scene.hpp">
       <Filter>Header Files\geometry</Filter>
     </ClInclude>

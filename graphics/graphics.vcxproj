@@ -206,7 +206,6 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClInclude Include="convex_body.hpp" />
     <ClInclude Include="body_app.hpp" />
     <ClInclude Include="bounds.hpp" />
-    <ClInclude Include="convex_polygon_app.hpp" />
     <ClInclude Include="app_base.hpp" />
     <ClInclude Include="artist.hpp" />
     <ClInclude Include="assets.hpp" />

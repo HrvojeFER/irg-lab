@@ -39,19 +39,15 @@ namespace irglab
 	{
 		using vector = vector<3>;
 
-		number aspect_ratio;
-
 		using transformation = transformation<3>;
 		
 
 		constexpr explicit scene(
-			const point& viewpoint = { 0.0f, 0.0f, -1.0f, 1.0f },
-			const number aspect_ratio) noexcept :
-			scene_internal<3>{ viewpoint },
-			aspect_ratio{ aspect_ratio }{ }
+			const point& viewpoint = { 0.0f, 0.0f, -1.0f, 1.0f }) noexcept :
+			scene_internal<3>{ viewpoint } { }
 
 
-		[[nodiscard]] constexpr transformation get_view_transformation() const noexcept
+		[[nodiscard]] transformation get_view_transformation() const
 		{
 			return
 				three_dimensional::get_translation(
@@ -68,14 +64,17 @@ namespace irglab
 		}
 
 
-		[[nodiscard]] constexpr transformation get_perspective_projection(
-			const point& point) const noexcept
+		[[nodiscard]] transformation get_perspective_projection(
+			const cartesian_coordinates<3>& point) const
 		{
 			return
 			{
 				1.0f, 0.0f, 0.0f, 0.0f,
 				0.0f, 1.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, 0.0f, 1 / distance(viewpoint, point),
+				0.0f, 0.0f, 0.0f,
+
+				1 / distance(to_cartesian_coordinates<3>(viewpoint), point),
+
 				0.0f, 0.0f, 0.0f, 0.0f
 			};
 		}
@@ -86,9 +85,6 @@ namespace irglab
 			view_right_{ 1.0f, 0.0f, 0.0f },
 			view_down_{ 0.0f, 1.0f, 0.0f },
 			view_in_{ 0.0f, 0.0f, 1.0f };
-
-		number min_depth_{ 0.0f }, max_depth_{ 10.0f };
-		angle view_angle_ { 1.0f };
 	};
 }
 

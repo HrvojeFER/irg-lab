@@ -48,7 +48,7 @@ namespace irglab
 
 		[[nodiscard]] std::vector<point<DimensionCount>> get_points() const
 		{
-			std::vector<point<DimensionCount>> points{ wires.size() * 2 };
+			std::vector<point<DimensionCount>> points{ };
 
 			for (const auto& wire : wires)
 				points.emplace_back(wire.begin),
