@@ -78,7 +78,7 @@ namespace irglab
 					sync_.semaphore(image_available, current_frame_),
 					nullptr).value;
 			}
-			catch (const vk::OutOfDateKHRError& out_of_date)
+			catch (const vk::OutOfDateKHRError&)
 			{
 #if !defined(NDEBUG)
 				std::cerr << out_of_date.what() << std::endl;

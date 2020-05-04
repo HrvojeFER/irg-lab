@@ -17,34 +17,15 @@ namespace irglab
 	struct body_app final : app_base
 	{
 		explicit body_app(
-			const std::string& path_to_body_file = "./objects/tetrahedron.obj",
+			const std::string& path_to_body_file = "./objects/cube.obj",
 			const std::string& path_to_reference_plane_file = "./objects/reference_plane.obj") :
-			app_base("Body")
+			app_base{ "Body" },
+			body_{ three_dimensional::convex_body::parse(
+				read_object_file(path_to_body_file)).body }
 		{
-			const auto body_parsing_report =
-				three_dimensional::convex_body::parse(read_object_file(path_to_body_file));
-			std::cout << "Body parsing report:" << std::endl <<
-				body_parsing_report;
-
-			auto body = body_parsing_report.body;
-
-			const auto bound_fit_report = body &= vulkan_friendly_limit;
-			std::cout << "Body fit report: " << std::endl <<
-				bound_fit_report;
-			body.normalize();
-			std::cout << "Body: " << std::endl <<
-				body;
-
-			wireframe_ += body;
-			wireframe_.remove_duplicate_wires();
-			std::cout << "Wireframe:" << std::endl << 
-				wireframe_ << std::endl;
-
-
-			const auto reference_plane_parsing_report =
-				three_dimensional::convex_body::parse(
-					read_object_file(path_to_reference_plane_file));
-			reference_frame_ += reference_plane_parsing_report.body;
+			body_ &= vulkan_friendly_limit;
+			reference_frame_ += three_dimensional::convex_body::parse(
+				read_object_file(path_to_reference_plane_file)).body;
 		}
 
 		
@@ -56,8 +37,8 @@ namespace irglab
 
 		
 		three_dimensional::camera camera_{};
-		three_dimensional::wireframe wireframe_{};
 		three_dimensional::wireframe reference_frame_{};
+		three_dimensional::convex_body body_;
 
 		
 		void pre_run() override
@@ -67,9 +48,8 @@ namespace irglab
 				[&]()
 				{
 					camera_.move_inward(step_size);
-					std::cout << "Current position: " <<
-						to_string(three_dimensional::to_cartesian_coordinates(camera_.viewpoint)) <<
-						std::endl;
+					if (camera_.viewpoint < body_) camera_.move_outward(step_size);
+				
 					set_scene_for_drawing();
 				});
 
@@ -78,9 +58,8 @@ namespace irglab
 				[&]()
 				{
 					camera_.move_left(step_size);
-					std::cout << "Current position: " <<
-						to_string(three_dimensional::to_cartesian_coordinates(camera_.viewpoint)) <<
-						std::endl;
+					if (camera_.viewpoint < body_) camera_.move_right(step_size);
+				
 					set_scene_for_drawing();
 				});
 			
@@ -89,9 +68,8 @@ namespace irglab
 				[&]()
 				{
 					camera_.move_outward(step_size);
-					std::cout << "Current position: " <<
-						to_string(three_dimensional::to_cartesian_coordinates(camera_.viewpoint)) <<
-						std::endl;
+					if (camera_.viewpoint < body_) camera_.move_inward(step_size);
+				
 					set_scene_for_drawing();
 				});
 
@@ -100,9 +78,8 @@ namespace irglab
 				[&]()
 				{
 					camera_.move_right(step_size);
-					std::cout << "Current position: " <<
-						to_string(three_dimensional::to_cartesian_coordinates(camera_.viewpoint)) <<
-						std::endl;
+					if (camera_.viewpoint < body_) camera_.move_left(step_size);
+				
 					set_scene_for_drawing();
 				});
 
@@ -112,8 +89,7 @@ namespace irglab
 				[&]()
 				{
 					camera_.view_up(angle_step);
-					std::cout << "Current orientation: " << to_string(camera_.viewpoint_base) <<
-						std::endl;
+				
 					set_scene_for_drawing();
 				});
 
@@ -122,8 +98,6 @@ namespace irglab
 				[&]()
 				{
 					camera_.view_left(angle_step);
-					std::cout << "Current orientation: " << to_string(camera_.viewpoint_base) <<
-						std::endl;
 					set_scene_for_drawing();
 				});
 
@@ -132,8 +106,6 @@ namespace irglab
 				[&]()
 				{
 					camera_.view_down(angle_step);
-					std::cout << "Current orientation: " << to_string(camera_.viewpoint_base) <<
-						std::endl;
 					set_scene_for_drawing();
 				});
 
@@ -142,8 +114,6 @@ namespace irglab
 				[&]()
 				{
 					camera_.view_right(angle_step);
-					std::cout << "Current orientation: " << to_string(camera_.viewpoint_base) <<
-						std::endl;
 					set_scene_for_drawing();
 				});
 
@@ -155,30 +125,56 @@ namespace irglab
 		
 		void set_scene_for_drawing()
 		{
-			const auto view_transformation = camera_.get_view_transformation();
+			three_dimensional::wireframe visible{};
+			three_dimensional::wireframe invisible{};
+
+			const auto viewpoint_cartesian =
+				three_dimensional::to_cartesian_coordinates(camera_.viewpoint);
 			
-			const auto points = wireframe_.get_points();
-			const auto reference_frame_points = 
-				reference_frame_.get_points();
-			std::vector<vertex> vertices{  };
+			for (const auto& triangle : body_.triangles)
+			{
+				const auto triangle_first_cartesian =
+					three_dimensional::to_cartesian_coordinates(triangle.first);
+				const auto triangle_second_cartesian =
+					three_dimensional::to_cartesian_coordinates(triangle.second);
+				const auto triangle_third_cartesian =
+					three_dimensional::to_cartesian_coordinates(triangle.third);
+				
+				if (dot(
+					three_dimensional::get_plane_normal(
+						triangle_first_cartesian,
+						triangle_second_cartesian,
+						triangle_third_cartesian),
+
+					viewpoint_cartesian -
+					(triangle_first_cartesian +
+						triangle_second_cartesian +
+						triangle_third_cartesian) / 3.0f) > 0) visible += triangle;
+
+				else invisible += triangle;
+
+			}
+
+			visible.remove_duplicate_wires();
+			invisible.remove_duplicate_wires();
 
 			
-			for (const auto& wire : wireframe_.wires)
+			const auto view_transformation = camera_.get_view_transformation();
+			std::vector<vertex> vertices{  };
+			
+			for (const auto& wire : invisible.wires)
 			{
 				auto begin = view_transformation * wire.begin;
 				auto end = view_transformation * wire.end;
 
-				if (begin.z / begin.w > 0 || end.z / end.w > 0)
+				if (begin.z / begin.w > 0 && end.z / end.w > 0)
 				{
-					three_dimensional::normalize(begin);
-					three_dimensional::normalize(end);
-
 					vertices.emplace_back(
 						vertex
 						{
 							camera_.get_projection(
 								three_dimensional::to_cartesian_coordinates(begin)),
-							{0.0f, 0.6f, 1.0f}
+							{0.0f, 0.3f, 0.2f}
 						});
 
 					vertices.emplace_back(
@@ -186,27 +182,49 @@ namespace irglab
 						{
 							camera_.get_projection(
 								three_dimensional::to_cartesian_coordinates(end)),
-							{1.0f, 0.6f, 0.0f}
+							{0.2f, 0.0f, 0.4f}
 						});
 				}
 			}
-			
+
+			for (const auto& wire : visible.wires)
+			{
+				auto begin = view_transformation * wire.begin;
+				auto end = view_transformation * wire.end;
+
+				if (begin.z / begin.w > 0 && end.z / end.w > 0)
+				{
+					vertices.emplace_back(
+						vertex
+						{
+							camera_.get_projection(
+								three_dimensional::to_cartesian_coordinates(begin)),
+							{1.0f, 0.6f, 0.0f}
+						});
+
+					vertices.emplace_back(
+						vertex
+						{
+							camera_.get_projection(
+								three_dimensional::to_cartesian_coordinates(end)),
+							{0.8f, 1.0f, 0.3f}
+						});
+				}
+			}
+
 			for (const auto& wire : reference_frame_.wires)
 			{
 				auto begin = view_transformation * wire.begin;
 				auto end = view_transformation * wire.end;
 
-				if (begin.z / begin.w > 0 || end.z / end.w > 0)
+				if (begin.z / begin.w > 0 && end.z / end.w > 0)
 				{
-					three_dimensional::normalize(begin);
-					three_dimensional::normalize(end);
-
 					vertices.emplace_back(
 						vertex
 						{
 							camera_.get_projection(
 								three_dimensional::to_cartesian_coordinates(begin)),
-							{0.0f, 0.6f, 1.0f}
+							{0.0f, 0.6f, 0.4f}
 						});
 
 					vertices.emplace_back(
@@ -214,7 +232,7 @@ namespace irglab
 						{
 							camera_.get_projection(
 								three_dimensional::to_cartesian_coordinates(end)),
-							{1.0f, 0.6f, 0.0f}
+							{0.0f, 0.4f, 0.6f}
 						});
 				}
 			}

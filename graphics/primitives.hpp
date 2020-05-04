@@ -47,13 +47,13 @@ namespace irglab
 
 	
 	template<>
-	[[nodiscard]] constexpr homogeneous_coordinates<2> to_homogeneous_coordinates<2>(
+	[[nodiscard]] inline homogeneous_coordinates<2> to_homogeneous_coordinates<2>(
 		const cartesian_coordinates<2>& cartesian_coordinates) noexcept
 	{
 		return { cartesian_coordinates.x, cartesian_coordinates.y, 1.0f };
 	}
 	template<>
-	[[nodiscard]] constexpr cartesian_coordinates<2> to_cartesian_coordinates<2>(
+	[[nodiscard]] inline cartesian_coordinates<2> to_cartesian_coordinates<2>(
 		const homogeneous_coordinates<2>& homogeneous_coordinates)
 	{
 		return
@@ -73,7 +73,7 @@ namespace irglab
 
 
 	template<>
-	[[nodiscard]] constexpr homogeneous_coordinates<3> to_homogeneous_coordinates<3>(
+	[[nodiscard]] inline homogeneous_coordinates<3> to_homogeneous_coordinates<3>(
 		const cartesian_coordinates<3>& cartesian_coordinates) noexcept
 	{
 		return
@@ -86,7 +86,7 @@ namespace irglab
 	}
 
 	template<>
-	[[nodiscard]] constexpr cartesian_coordinates<3> to_cartesian_coordinates<3>(
+	[[nodiscard]] inline cartesian_coordinates<3> to_cartesian_coordinates<3>(
 		const homogeneous_coordinates<3>& homogeneous_coordinates)
 	{
 		return
@@ -120,13 +120,13 @@ namespace irglab::two_dimensional
 	using line = irglab::line<dimension_count>;
 
 	
-	[[nodiscard]] constexpr homogeneous_coordinates to_homogeneous_coordinates(
+	[[nodiscard]] inline homogeneous_coordinates to_homogeneous_coordinates(
 		const cartesian_coordinates& cartesian_coordinates) noexcept
 	{
 		return irglab::to_homogeneous_coordinates<dimension_count>(cartesian_coordinates);
 	}
 
-	[[nodiscard]] constexpr cartesian_coordinates to_cartesian_coordinates(
+	[[nodiscard]] inline cartesian_coordinates to_cartesian_coordinates(
 		const homogeneous_coordinates& homogeneous_coordinates)
 	{
 		return irglab::to_cartesian_coordinates<dimension_count>(homogeneous_coordinates);
@@ -138,7 +138,7 @@ namespace irglab::two_dimensional
 	}
 
 	
-	[[nodiscard]] constexpr line get_line_at_y(const number y_coordinate) noexcept
+	[[nodiscard]] inline line get_line_at_y(const number y_coordinate) noexcept
 	{
 		return { 0, 1, -y_coordinate };
 	}
@@ -167,16 +167,16 @@ namespace irglab::three_dimensional
 
 	
 	using plane = homogeneous_coordinates;
-	using plane_normal = homogeneous_coordinates;
+	using plane_normal = cartesian_coordinates;
 
 	
-	[[nodiscard]] constexpr homogeneous_coordinates to_homogeneous_coordinates(
+	[[nodiscard]] inline homogeneous_coordinates to_homogeneous_coordinates(
 		const cartesian_coordinates& cartesian_coordinates) noexcept
 	{
 		return irglab::to_homogeneous_coordinates<dimension_count>(cartesian_coordinates);
 	}
 
-	[[nodiscard]] constexpr cartesian_coordinates to_cartesian_coordinates(
+	[[nodiscard]] inline cartesian_coordinates to_cartesian_coordinates(
 		const homogeneous_coordinates& homogeneous_coordinates)
 	{
 		return irglab::to_cartesian_coordinates<dimension_count>(homogeneous_coordinates);
@@ -187,14 +187,12 @@ namespace irglab::three_dimensional
 		irglab::normalize<dimension_count>(homogeneous_coordinates);
 	}
 
-	[[nodiscard]] inline plane get_common_plane(
-		point first_point,
-		point second_point,
-		point third_point)
+	[[nodiscard]] inline plane_normal get_plane_normal(
+		const cartesian_coordinates& first_point,
+		const cartesian_coordinates& second_point,
+		const cartesian_coordinates& third_point)
 	{
-		normalize(first_point), normalize(second_point), normalize(third_point);
-
-		const plane_normal normal
+		return
 		{
 			(second_point.y - first_point.y) * (third_point.z - first_point.z) -
 				(second_point.z - first_point.z) * (third_point.y - first_point.y),
@@ -203,10 +201,16 @@ namespace irglab::three_dimensional
 				(second_point.z - first_point.z) * (third_point.x - first_point.x),
 
 			(second_point.x - first_point.x) * (third_point.y - first_point.y) -
-				(second_point.y - first_point.y) * (third_point.x - first_point.x),
-			
-			1.0f
+				(second_point.y - first_point.y) * (third_point.x - first_point.x)
 		};
+	}
+
+	[[nodiscard]] inline plane get_common_plane(
+		const cartesian_coordinates& first_point,
+		const cartesian_coordinates& second_point,
+		const cartesian_coordinates& third_point)
+	{
+		const auto normal = get_plane_normal(first_point, second_point, third_point);
 
 		return
 		{

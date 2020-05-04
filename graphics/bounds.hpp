@@ -69,12 +69,12 @@ namespace irglab
 			}
 		}
 
-		[[nodiscard]] constexpr difference get_difference() const noexcept
+		[[nodiscard]] difference get_difference() const noexcept
 		{
 			return { this->x_max - this->x_min, this->y_max - this->y_min };
 		}
 
-		[[nodiscard]] constexpr center get_center() const noexcept
+		[[nodiscard]] center get_center() const noexcept
 		{
 			return
 			{
@@ -168,7 +168,7 @@ namespace irglab
 			}
 		}
 
-		[[nodiscard]] constexpr difference get_difference() const noexcept
+		[[nodiscard]] difference get_difference() const noexcept
 		{
 			return
 			{
@@ -178,7 +178,7 @@ namespace irglab
 			};
 		}
 		
-		[[nodiscard]] constexpr center get_center() const noexcept
+		[[nodiscard]] center get_center() const noexcept
 		{
 			return
 			{

@@ -53,7 +53,7 @@ namespace irglab
 
 
 		friend void operator+=(
-			wireframe<DimensionCount>& wireframe, const triangle_internal& triangle) noexcept
+			wireframe<DimensionCount>& wireframe, const triangle_internal& triangle)
 		{
 			wireframe += wire<DimensionCount>{ triangle.first, triangle.second },
 			wireframe += wire<DimensionCount>{ triangle.second, triangle.third },
@@ -103,18 +103,18 @@ namespace irglab
 			triangle_internal<2>{ first, second, third } { }
 
 
-		[[nodiscard]] direction get_direction() const noexcept
+		[[nodiscard]] direction get_direction() const
 		{
 			return two_dimensional::get_direction(first, second, third);
 		}
 
-		void operator%=(const direction direction) noexcept
+		void operator%=(const direction direction)
 		{
 			if (this->get_direction() != direction) ~*this;
 		}
 
 		[[nodiscard]] friend bool operator<(
-			const two_dimensional::point& point, const triangle& triangle) noexcept
+			const two_dimensional::point& point, const triangle& triangle)
 		{
 			const auto triangle_direction = triangle.get_direction();
 
@@ -145,11 +145,28 @@ namespace irglab
 		[[nodiscard]] three_dimensional::plane get_plane() const
 		{
 			return three_dimensional::get_common_plane(
-				this->first, this->second, this->third);
+				three_dimensional::to_cartesian_coordinates(this->first), 
+				three_dimensional::to_cartesian_coordinates(this->second), 
+				three_dimensional::to_cartesian_coordinates(this->third));
 		}
 
+		[[nodiscard]] three_dimensional::plane_normal get_plane_normal() const
+		{
+			return three_dimensional::get_plane_normal(
+				three_dimensional::to_cartesian_coordinates(this->first),
+				three_dimensional::to_cartesian_coordinates(this->second),
+				three_dimensional::to_cartesian_coordinates(this->third));
+		}
+
+		[[nodiscard]] three_dimensional::cartesian_coordinates get_center() const
+		{
+			return three_dimensional::to_cartesian_coordinates(this->first) +
+				three_dimensional::to_cartesian_coordinates(this->second) +
+				three_dimensional::to_cartesian_coordinates(this->third) / 3.0f;
+		}
+		
 		[[nodiscard]] friend bool operator<(
-			const three_dimensional::point& point, const triangle& triangle) noexcept
+			const three_dimensional::point& point, const triangle& triangle)
 		{
 			return three_dimensional::get_direction(point, triangle.get_plane());
 		}

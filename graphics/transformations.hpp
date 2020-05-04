@@ -26,7 +26,7 @@ namespace irglab::two_dimensional
 	using orthonormal_base = irglab::orthonormal_base<dimension_count>;
 	using axis = irglab::axis<dimension_count>;
 
-	[[nodiscard]] constexpr transformation get_scale_transformation(
+	[[nodiscard]] inline transformation get_scale_transformation(
 		const number scaling_factor) noexcept
 	{
 		return
@@ -37,7 +37,7 @@ namespace irglab::two_dimensional
 		};
 	}
 
-	[[nodiscard]] constexpr transformation get_translation(
+	[[nodiscard]] inline transformation get_translation(
 		const number x_translation,
 		const number y_translation) noexcept
 	{
@@ -90,7 +90,7 @@ namespace irglab::three_dimensional
 	using orthonormal_base = irglab::orthonormal_base<dimension_count>;
 	using axis = irglab::axis<dimension_count>;
 
-	[[nodiscard]] constexpr transformation get_scale_transformation(
+	[[nodiscard]] inline transformation get_scale_transformation(
 		const number scaling_factor) noexcept
 	{
 		return
@@ -102,7 +102,7 @@ namespace irglab::three_dimensional
 		};
 	}
 	
-	[[nodiscard]] constexpr transformation get_translation(
+	[[nodiscard]] inline transformation get_translation(
 		const number x_translation,
 		const number y_translation,
 		const number z_translation) noexcept
