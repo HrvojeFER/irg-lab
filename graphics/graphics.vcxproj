@@ -119,6 +119,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.131.2\Lib;C:\VulkanSDK\glfw-3.3.2.bin.WIN64\lib-vc2019</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
     </Link>
     <PreBuildEvent>
       <Command>powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File pre-build.ps1</Command>
@@ -175,12 +177,13 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.131.2\Lib;C:\VulkanSDK\glfw-3.3.2.bin.WIN64\lib-vc2019</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
     <PreBuildEvent>
       <Command>powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File pre-build.ps1</Command>
@@ -203,6 +206,7 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="animation_app.hpp" />
     <ClInclude Include="convex_body.hpp" />
     <ClInclude Include="body_app.hpp" />
     <ClInclude Include="bounds.hpp" />
@@ -210,6 +214,8 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClInclude Include="artist.hpp" />
     <ClInclude Include="assets.hpp" />
     <ClInclude Include="convex_polygon.hpp" />
+    <ClInclude Include="convex_polygon_app.hpp" />
+    <ClInclude Include="curve.hpp" />
     <ClInclude Include="debug_manager.hpp" />
     <ClInclude Include="device.hpp" />
     <ClInclude Include="direction.hpp" />

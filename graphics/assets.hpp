@@ -17,8 +17,8 @@ namespace irglab
         "./shaders/compiled/vertex_shader.spirv",
         "./shaders/compiled/fragment_shader.spirv"
 #else
-        "./shaders/vertex_shader.spirv",
-        "./shaders/fragment_shader.spirv"
+        "./shaders/compiled/vertex_shader.spirv",
+        "./shaders/compiled/fragment_shader.spirv"
 #endif
     };
 
@@ -46,7 +46,9 @@ namespace irglab
 
 	[[nodiscard]] static std::vector<std::string> read_object_file(const std::string& path)
 	{
+#if !defined (NDEBUG)
         std::cout << "Reading object file at: '" << path << "'." << std::endl;
+#endif
     	
         std::ifstream file{ path };
         if (!file.is_open())

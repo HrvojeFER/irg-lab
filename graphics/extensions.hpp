@@ -55,6 +55,7 @@ namespace irglab
 		return result;
 	}
 
+	
 	inline void left_trim(std::string& s) {
 		s.erase(
 			s.begin(), 
@@ -73,9 +74,22 @@ namespace irglab
 			string.end());
 	}
 
-	static void trim(std::string& s) {
+	inline void trim(std::string& s) {
 		left_trim(s);
 		right_trim(s);
+	}
+
+	
+	inline size_t factorial(const size_t n)
+	{
+		if (n == 0) return 1;
+
+		return n * factorial(n - 1);
+	}
+
+	inline size_t number_of_combinations(const size_t n, const size_t r)
+	{
+		return factorial(n) / (factorial(r) * factorial(n - r));
 	}
 }
 

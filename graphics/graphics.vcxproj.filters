@@ -113,6 +113,15 @@
     <ClInclude Include="camera.hpp">
       <Filter>Header Files\geometry</Filter>
     </ClInclude>
+    <ClInclude Include="curve.hpp">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="animation_app.hpp">
+      <Filter>Header Files\app</Filter>
+    </ClInclude>
+    <ClInclude Include="convex_polygon_app.hpp">
+      <Filter>Header Files\app</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="pre-build.ps1" />

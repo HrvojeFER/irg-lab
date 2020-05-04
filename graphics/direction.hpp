@@ -57,7 +57,7 @@ namespace irglab::three_dimensional
 {
 	[[nodiscard]] inline direction get_direction(const plane& plane, const point& point) 
 	{
-		if (const auto relation = dot(point, plane); relation != 0) return relation > 0;
+		if (const auto relation = dot(point, plane); relation != 0) return relation < 0;
 
 		throw std::invalid_argument("Point is on the plane.");
 	}
@@ -71,7 +71,7 @@ namespace irglab::three_dimensional
 		if (const auto relation = dot(fourth, get_common_plane(first, second, third));
 			relation != 0)
 		{
-			return relation > 0;
+			return relation < 0;
 		}
 
 		throw std::invalid_argument("Points are coplanar.");

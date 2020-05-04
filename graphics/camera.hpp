@@ -45,17 +45,13 @@ namespace irglab
 	template<>
 	struct camera<3> final : camera_internal<3>
 	{
+		static inline const point origin = { 0.0f, 0.0f, 0.0f, 0.0f };
+		
 		number projection_plane_distance;
 		
 		constexpr explicit camera(
-			const point& viewpoint = { 0.0f, 0.2f, 2.0f, 1.0f },
-			const orthonormal_base& viewpoint_base = orthonormal_base
-			{
-				1.0f, 0.0f, 0.0f, 0.0f,
-				0.0f, 1.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, -1.0f, 0.0f,
-				0.0f, 0.0f, 0.0f, 1.0f
-			},
+			const point& viewpoint = { 0.0f, 0.0f, -2.0f, 1.0f },
+			const orthonormal_base& viewpoint_base = orthonormal_base { 1.0f },
 			const number projection_plane_distance = 1.0f) noexcept :
 			camera_internal<3>{ viewpoint, viewpoint_base },
 			projection_plane_distance{ projection_plane_distance } { }
@@ -82,6 +78,24 @@ namespace irglab
 			{
 				point.x * projection_plane_distance / point.z,
 				point.y * projection_plane_distance / point.z
+			};
+		}
+
+
+		void point_to(const point& point)
+		{
+			const auto z_norm = glm::normalize(
+				three_dimensional::to_cartesian_coordinates(point - viewpoint));
+			const auto x_norm = glm::normalize(cross(
+				{ viewpoint_base[1].x, viewpoint_base[1].y, viewpoint_base[1].z }, z_norm));
+			const auto y_norm = cross(z_norm, x_norm);
+
+			viewpoint_base =
+			{
+				x_norm.x, y_norm.x, z_norm.x, 0.0f,
+				x_norm.y, y_norm.y, z_norm.y, 0.0f,
+				x_norm.z, y_norm.z, z_norm.z, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f
 			};
 		}
 
@@ -114,25 +128,25 @@ namespace irglab
 		void view_up(const angle angle)
 		{
 			viewpoint_base = 
-				three_dimensional::get_rotation(angle, viewpoint_base[0]) * viewpoint_base;
+				three_dimensional::get_rotation(-angle, viewpoint_base[0]) * viewpoint_base;
 		}
 
 		void view_down(const angle angle)
 		{
 			viewpoint_base = 
-				three_dimensional::get_rotation(-angle, viewpoint_base[0]) * viewpoint_base;
+				three_dimensional::get_rotation(angle, viewpoint_base[0]) * viewpoint_base;
 		}
 
 		void view_right(const angle angle)
 		{
 			viewpoint_base = 
-				three_dimensional::get_rotation(angle, viewpoint_base[1]) * viewpoint_base;
+				three_dimensional::get_rotation(-angle, viewpoint_base[1]) * viewpoint_base;
 		}
 
 		void view_left(const angle angle)
 		{
 			viewpoint_base = 
-				three_dimensional::get_rotation(-angle, viewpoint_base[1]) * viewpoint_base;
+				three_dimensional::get_rotation(angle, viewpoint_base[1]) * viewpoint_base;
 		}
 	};
 }

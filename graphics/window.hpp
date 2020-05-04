@@ -23,7 +23,7 @@ namespace irglab
 			double x;
 			double y;
 		};
-		using mouse_button_callback = std::function<void(const cursor_position&)>;
+		using mouse_button_callback = std::function<void(cursor_position)>;
 		
 		explicit window(
 			const environment& environment,
@@ -84,17 +84,22 @@ namespace irglab
 
 		void on_resize(const resize_callback& callback)
 		{
-			resize_callbacks_.push_back(callback);
+			resize_callbacks_.emplace_back(callback);
 		}
 
 		void on_key(const int key, const int action, const key_callback& callback)
 		{
-			key_callbacks_[key][action].push_back(callback);
+			key_callbacks_[key][action].emplace_back(callback);
 		}
 
+		void on_key_oneshot(const int key, const int action, const key_callback& callback)
+		{
+			oneshot_key_callbacks_[key][action].emplace_back(callback);
+		}
+		
 		void on_mouse_button(const int button, const int action, const mouse_button_callback& callback)
 		{
-			mouse_button_callbacks_[button][action].push_back(callback);
+			mouse_button_callbacks_[button][action].emplace_back(callback);
 		}
 
 		void close() const
@@ -112,6 +117,7 @@ namespace irglab
 		using user_input_callback_map =
 			std::unordered_map<int, std::unordered_map<int, std::vector<CallbackType>>>;
 		user_input_callback_map<key_callback> key_callbacks_{};
+		user_input_callback_map<key_callback> oneshot_key_callbacks_{};
 		user_input_callback_map<mouse_button_callback> mouse_button_callbacks_{};
 
 
@@ -195,6 +201,14 @@ namespace irglab
 			{
 				key_callback();
 			}
+
+			for (const auto& oneshot_key_callback : 
+				this_->oneshot_key_callbacks_[key][action])
+			{
+				oneshot_key_callback();
+			}
+
+			this_->oneshot_key_callbacks_.clear();
 		}
 
 		static void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
