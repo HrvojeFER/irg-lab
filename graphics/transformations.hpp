@@ -5,7 +5,12 @@
 #include "pch.hpp"
 
 #include "primitives.hpp"
-
+/*
+ * In GLM, everything is set column by column, so, in order to make sense of the transformations visually,
+ * I set them row by row and then transposed all of them. This doesn't affect performance a lot because,
+ * usually, transposing a transformation is way faster than calculating the transformation and in most
+ * calculations you would calculate the transformation and apply it to all points.
+ */
 
 namespace irglab
 {
@@ -30,11 +35,12 @@ namespace irglab::two_dimensional
 		const number scaling_factor) noexcept
 	{
 		return
-		{
-			scaling_factor, 0.0f, 0.0f,
-			0.0f, scaling_factor, 0.0f,
-			0.0f, 0.0f, 1.0f
-		};
+			transpose(transformation
+				{
+					scaling_factor, 0.0f, 0.0f,
+					0.0f, scaling_factor, 0.0f,
+					0.0f, 0.0f, 1.0f
+				});
 	}
 
 	[[nodiscard]] inline transformation get_translation(
@@ -42,11 +48,12 @@ namespace irglab::two_dimensional
 		const number y_translation) noexcept
 	{
 		return
-		{
-			1.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f,
-			x_translation, y_translation, 1.0f
-		};
+			transpose(transformation
+				{
+					1.0f, 0.0f, 0.0f,
+					0.0f, 1.0f, 0.0f,
+					x_translation, y_translation, 1.0f
+				});
 	}
 
 	[[nodiscard]] inline transformation get_rotation(
@@ -57,22 +64,24 @@ namespace irglab::two_dimensional
 		const auto cosine = glm::cos(angle);
 		
 		return
-		{
-			cosine, sine, 0.0f,
-			-sine, cosine, 0.0f,
-			0.0f, 0.0f, 1.0f
-		};
+			transpose(transformation
+				{
+					cosine, sine, 0.0f,
+					-sine, cosine, 0.0f,
+					0.0f, 0.0f, 1.0f
+				});
 	}
 
 	[[nodiscard]] inline transformation get_shear_transformation(
 		const angle x_angle, const angle y_angle) noexcept
 	{
 		return
-		{
-			1.0f, glm::tan(x_angle), 0.0f,
-			glm::tan(y_angle), 1.0f, 0.0f,
-			0.0f, 0.0f, 1.0f
-		};
+			transpose(transformation
+				{
+					1.0f, glm::tan(x_angle), 0.0f,
+					glm::tan(y_angle), 1.0f, 0.0f,
+					0.0f, 0.0f, 1.0f
+				});
 	}
 
 	[[nodiscard]] inline transformation get_perspective_transformation(
@@ -94,12 +103,13 @@ namespace irglab::three_dimensional
 		const number scaling_factor) noexcept
 	{
 		return
-		{
-			scaling_factor, 0.0f, 0.0f, 0.0f,
-			0.0f, scaling_factor, 0.0f, 0.0f,
-			0.0f, 0.0f, scaling_factor, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
+			transpose(transformation
+				{
+					scaling_factor, 0.0f, 0.0f, 0.0f,
+					0.0f, scaling_factor, 0.0f, 0.0f,
+					0.0f, 0.0f, scaling_factor, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f
+				});
 	}
 	
 	[[nodiscard]] inline transformation get_translation(
@@ -108,12 +118,13 @@ namespace irglab::three_dimensional
 		const number z_translation) noexcept
 	{
 		return
-		{
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			x_translation, y_translation, z_translation, 1.0f
-		};
+			transpose(transformation
+				{
+					1.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 1.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f,
+					x_translation, y_translation, z_translation, 1.0f
+				});
 	}
 
 	[[nodiscard]] inline transformation get_x_rotation(
@@ -124,12 +135,13 @@ namespace irglab::three_dimensional
 		const auto cosine = glm::cos(angle);
 		
 		return
-		{
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, cosine, sine, 0.0f,
-			0.0f, -sine, cosine, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
+			transpose(transformation
+				{
+					1.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, cosine, sine, 0.0f,
+					0.0f, -sine, cosine, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f
+				});
 	}
 
 	[[nodiscard]] inline transformation get_y_rotation(const angle angle) noexcept
@@ -139,12 +151,13 @@ namespace irglab::three_dimensional
 		const auto cosine = glm::cos(angle);
 
 		return
-		{
-			cosine, 0.0f, -sine, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			sine, 0.0f, cosine, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
+			transpose(transformation
+				{
+					cosine, 0.0f, -sine, 0.0f,
+					0.0f, 1.0f, 0.0f, 0.0f,
+					sine, 0.0f, cosine, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f
+				});
 	}
 
 	[[nodiscard]] inline transformation get_z_rotation(const angle angle) noexcept
@@ -154,12 +167,13 @@ namespace irglab::three_dimensional
 		const auto cosine = glm::cos(angle);
 
 		return
-		{
-			cosine, sine, 0.0f, 0.0f,
-			-sine, cosine, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
+			transpose(transformation
+				{
+					cosine, sine, 0.0f, 0.0f,
+					-sine, cosine, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f
+				});
 	}
 
 	// Following the Rodrigues' rotation formula.
@@ -170,24 +184,25 @@ namespace irglab::three_dimensional
 		const auto cosine = glm::cos(angle);
 
 		return
-		{
-			cosine + axis.x * axis.x * (1 - cosine),
-			axis.x * axis.y * (1 - cosine) - axis.z * sine,
-			axis.y * sine + axis.x * axis.z * (1 - cosine),
-			0.0f,
+			transpose(transformation
+				{
+					cosine + axis.x * axis.x * (1 - cosine),
+					axis.x * axis.y * (1 - cosine) - axis.z * sine,
+					axis.y * sine + axis.x * axis.z * (1 - cosine),
+					0.0f,
 
-			axis.z * sine + axis.x * axis.y * (1 - cosine),
-			cosine + axis.y * axis.y * (1 - cosine),
-			-axis.x * sine + axis.y * axis.z * (1 - cosine),
-			0.0f,
+					axis.z * sine + axis.x * axis.y * (1 - cosine),
+					cosine + axis.y * axis.y * (1 - cosine),
+					-axis.x * sine + axis.y * axis.z * (1 - cosine),
+					0.0f,
 
-			-axis.y * sine + axis.x * axis.z * (1 - cosine),
-			axis.x * sine + axis.y * axis.z * (1 - cosine),
-			cosine + axis.z * axis.z * (1 - cosine),
-			0.0f,
+					-axis.y * sine + axis.x * axis.z * (1 - cosine),
+					axis.x * sine + axis.y * axis.z * (1 - cosine),
+					cosine + axis.z * axis.z * (1 - cosine),
+					0.0f,
 
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
+					0.0f, 0.0f, 0.0f, 1.0f
+				});
 	}
 
 	[[nodiscard]] inline transformation get_shear_transformation(
@@ -201,12 +216,13 @@ namespace irglab::three_dimensional
 		const auto z_tan = glm::tan(z_angle);
 		
 		return
-		{
-			1.0f, x_tan, x_tan, 0.0f,
-			y_tan, 1.0f, y_tan, 0.0f,
-			z_tan, z_tan, 1.0f, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
+			transpose(transformation
+				{
+					1.0f, x_tan, x_tan, 0.0f,
+					y_tan, 1.0f, y_tan, 0.0f,
+					z_tan, z_tan, 1.0f, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f
+				});
 	}
 }
 

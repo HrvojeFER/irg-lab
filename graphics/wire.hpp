@@ -50,7 +50,7 @@ namespace irglab
 
 		constexpr void operator*=(const transformation<DimensionCount>& transformation) noexcept
 		{
-			begin = transformation * begin, end = transformation * end;
+			begin = begin * transformation, end = end * transformation;
 		}
 
 		

@@ -9,7 +9,7 @@ void print(MathType value)
 template <class ... MathType>
 void print_many(MathType ... params)
 {
-	for (auto value : { params ... })
+	for (const auto& value : { params ... })
 	{
 		print(value);
 	}
@@ -73,64 +73,9 @@ inline glm::vec3 get_barycentric(const glm::mat3x3& triangle, const glm::vec3& p
 
 int main()  // NOLINT(bugprone-exception-escape)
 {
-	print_many(v1, v2, v3, v4);
-	std::cout << s << std::endl;
-	std::cout << std::endl;
-	print_many(m1, m2, m3);
-	std::cout << std::endl;
-	print_many(v);
 
-	glm::vec3 v32{};
-	v32 = v32 * hm1;
-	
-	float x1, y1, z1, r1;
-	float x2, y2, z2, r2;
-	float x3, y3, z3, r3;
-
-	std::cout << std::endl << "1. equation" << std::endl;
-	std::cin >> x1 >> y1 >> z1 >> r1;
-	std::cout << std::endl << "2. equation" << std::endl;
-	std::cin >> x2 >> y2 >> z2 >> r2;
-	std::cout << std::endl << "3. equation" << std::endl;
-	std::cin >> x3 >> y3 >> z3 >> r3;
-
-	print(solve_equation(
-		glm::mat3x3
-		{
-			x1, y1, z1,
-			x2, y2, z2,
-			x3, y3, z3
-		},
-		glm::vec3
-		{
-			r1, r2, r3
-		})
-	);
-
-	
-	std::cout << std::endl << "Triangle vertex A" << std::endl;
-	std::cin >> x1 >> y1 >> z1;
-	std::cout << std::endl << "Triangle vertex B" << std::endl;
-	std::cin >> x2 >> y2 >> z2;
-	std::cout << std::endl << "Triangle vertex C" << std::endl;
-	std::cin >> x3 >> y3 >> z3;
-	std::cout << std::endl << "Point" << std::endl;
-	std::cin >> r1 >> r2 >> r3;
-	std::cout << std::endl;
-
-	print(get_barycentric(
-		glm::mat3x3
-		{
-			x1, x2, x3,
-			y1, y2, y3,
-			z1, z2, z3
-		},
-		glm::vec3
-		{
-			r1, r2, r3
-		})
-	);
-
+	print(transpose(hm1));
+	print(transpose(hm1)[0]);
 	
 	return EXIT_SUCCESS;
 }

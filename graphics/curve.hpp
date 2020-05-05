@@ -25,7 +25,7 @@ namespace irglab
 
 			for (size i = 0; i < control_points.size(); ++i)
 				result += control_points[i] * get_bernstein_polynomial_result(
-					i, control_points.size(), parameter);
+					i, control_points.size() - 1, parameter);
 
 			return result;
 		}

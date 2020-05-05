@@ -39,9 +39,9 @@ namespace irglab
 
 		constexpr void operator*=(const transformation<DimensionCount>& transformation) noexcept
 		{
-			first = transformation * first,
-			second = transformation * second,
-			third = transformation * third;
+			first = first * transformation,
+			second = second * transformation,
+			third = third * transformation;
 		}
 
 

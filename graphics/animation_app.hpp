@@ -54,14 +54,15 @@ namespace irglab
 
 		three_dimensional::curve curve_
 		{
-			{ 0.0f, 0.0f, -2.0f },
-			{ 1.0f, 1.0f, 0.0f },
-			{ 0.0f, 0.0f, -1.0f },
-			{ -1.0f, 0.0f, 0.0f }
+			{ -2.0f, 0.0f, 0.0f },
+			{ -1.0f, 4.0f, -2.0f },
+			{ 0.0f, -7.0f, -4.0f },
+			{ 1.0f, 4.0f, -2.0f },
+			{ 2.0f, 0.0f, 0.0f }
 		};
 
 		// Animations per second.
-		number animation_speed_ = 0.2f;
+		number animation_speed_ = 1.0f;
 		bool did_exit_animation_ = false;
 		std::chrono::time_point<std::chrono::system_clock> animation_start_{};
 
@@ -100,18 +101,11 @@ namespace irglab
 				camera_.viewpoint =
 					three_dimensional::to_homogeneous_coordinates(curve_(curve_parameter));
 
+				camera_.point_to(three_dimensional::camera::origin, { 0.0f, 1.0f, 0.0f });
+
 				set_scene_for_drawing();
 
 				app_base::loop();
-
-				if (std::chrono::duration_cast<std::chrono::microseconds>(
-					std::chrono::system_clock::now() - current_animation_start).count() /
-					1000000.0f < frame_time)
-				{
-					std::this_thread::sleep_until(
-						current_animation_start +
-						std::chrono::microseconds{ static_cast<long long>(frame_time * 1000000) });
-				}
 			}
 			else
 			{
@@ -298,18 +292,17 @@ namespace irglab
 			std::vector<vertex> vertices{  };
 
 #if !defined(NDEBUG)
-			for (const auto& wire : invisible.wires)
+			for (auto wire : invisible.wires)
 			{
-				auto begin = view_transformation * wire.begin;
-				auto end = view_transformation * wire.end;
+				wire *= view_transformation;
 
-				if (begin.z / begin.w > 0 && end.z / end.w > 0)
+				if (wire.begin.z / wire.begin.w > 0 && wire.end.z / wire.end.w > 0)
 				{
 					vertices.emplace_back(
 						vertex
 						{
 							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(begin)),
+								three_dimensional::to_cartesian_coordinates(wire.begin)),
 							{0.0f, 0.3f, 0.2f}
 						});
 
@@ -317,25 +310,24 @@ namespace irglab
 						vertex
 						{
 							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(end)),
+								three_dimensional::to_cartesian_coordinates(wire.end)),
 							{0.2f, 0.0f, 0.4f}
 						});
 				}
 			}
 #endif
 
-			for (const auto& wire : visible.wires)
+			for (auto wire : visible.wires)
 			{
-				auto begin = view_transformation * wire.begin;
-				auto end = view_transformation * wire.end;
+				wire *= view_transformation;
 
-				if (begin.z / begin.w > 0 && end.z / end.w > 0)
+				if (wire.begin.z / wire.begin.w > 0 && wire.end.z / wire.end.w > 0)
 				{
 					vertices.emplace_back(
 						vertex
 						{
 							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(begin)),
+								three_dimensional::to_cartesian_coordinates(wire.begin)),
 							{1.0f, 0.6f, 0.0f}
 						});
 
@@ -343,25 +335,24 @@ namespace irglab
 						vertex
 						{
 							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(end)),
-							{0.8f, 1.0f, 0.3f}
+								three_dimensional::to_cartesian_coordinates(wire.end)),
+							{0.6f, 1.0f, 0.5f}
 						});
 				}
 			}
 
 #if !defined(NDEBUG)
-			for (const auto& wire : reference_frame_.wires)
+			for (auto wire : reference_frame_.wires)
 			{
-				auto begin = view_transformation * wire.begin;
-				auto end = view_transformation * wire.end;
-
-				if (begin.z / begin.w > 0 && end.z / end.w > 0)
+				wire *= view_transformation;
+				
+				if (wire.begin.z / wire.begin.w > 0 && wire.end.z / wire.end.w > 0)
 				{
 					vertices.emplace_back(
 						vertex
 						{
 							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(begin)),
+								three_dimensional::to_cartesian_coordinates(wire.begin)),
 							{0.0f, 0.6f, 0.4f}
 						});
 
@@ -369,7 +360,7 @@ namespace irglab
 						vertex
 						{
 							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(end)),
+								three_dimensional::to_cartesian_coordinates(wire.end)),
 							{0.0f, 0.4f, 0.6f}
 						});
 				}
