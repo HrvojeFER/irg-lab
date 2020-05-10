@@ -50,7 +50,7 @@ namespace irglab
 		}
 	};
 	
-	struct vertex_manager
+	struct memory_manager
 	{
 		// sizeof(float) = 4
 		// sizeof(vertex) = 2 * 4 + 3 * 4 = 20 - position_vector + color
@@ -59,7 +59,7 @@ namespace irglab
 		static inline const vk::DeviceSize buffer_size = sizeof(vertex) * vertex_count;
 		const vk::DeviceSize buffer_offset = 0;
 		
-		explicit vertex_manager(const device& device) :
+		explicit memory_manager(const device& device) :
 			device_(device),
 			vertex_buffer_
 			{

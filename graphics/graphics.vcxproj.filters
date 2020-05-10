@@ -53,9 +53,6 @@
     <ClInclude Include="swapchain.hpp">
       <Filter>Header Files\graphics</Filter>
     </ClInclude>
-    <ClInclude Include="vertex_manager.hpp">
-      <Filter>Header Files\graphics</Filter>
-    </ClInclude>
     <ClInclude Include="pipeline.hpp">
       <Filter>Header Files\graphics</Filter>
     </ClInclude>
@@ -121,6 +118,9 @@
     </ClInclude>
     <ClInclude Include="convex_polygon_app.hpp">
       <Filter>Header Files\app</Filter>
+    </ClInclude>
+    <ClInclude Include="memory_manager.hpp">
+      <Filter>Header Files\graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

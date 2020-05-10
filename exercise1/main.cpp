@@ -76,6 +76,8 @@ int main()  // NOLINT(bugprone-exception-escape)
 
 	print(transpose(hm1));
 	print(transpose(hm1)[0]);
+	print(transpose(hm1) * transpose(hm1)[0]);
+	print(transpose(hm1)[0] * transpose(hm1));
 	
 	return EXIT_SUCCESS;
 }

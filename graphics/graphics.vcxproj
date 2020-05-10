@@ -230,7 +230,7 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClInclude Include="tetrahedron.hpp" />
     <ClInclude Include="transformations.hpp" />
     <ClInclude Include="triangle.hpp" />
-    <ClInclude Include="vertex_manager.hpp" />
+    <ClInclude Include="memory_manager.hpp" />
     <ClInclude Include="window.hpp" />
     <ClInclude Include="wire.hpp" />
     <ClInclude Include="wireframe.hpp" />
