@@ -119,6 +119,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.131.2\Lib;C:\VulkanSDK\glfw-3.3.2.bin.WIN64\lib-vc2019</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
     </Link>
     <PreBuildEvent>
       <Command>powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File pre-build.ps1</Command>
@@ -129,8 +131,11 @@
     <PostBuildEvent>
       <Command>if not exist "$(OutputPath)shaders" mkdir "$(OutputPath)shaders"
 robocopy "$(ProjectDir)shaders/compiled" "$(OutputPath)shaders"
-robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
-      <Message>Post-build: copying SPIR-V shader byte code files and Vulkan layer settings.</Message>
+robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt
+
+if not exist "$(OutputPath)objects" mkdir "$(OutputPath)objects"
+robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
+      <Message>Post-build: copying SPIR-V shader byte code files, Vulkan layer settings and object files.</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -165,16 +170,20 @@ robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
-      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <Optimization>Full</Optimization>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.131.2\Lib;C:\VulkanSDK\glfw-3.3.2.bin.WIN64\lib-vc2019</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
     <PreBuildEvent>
       <Command>powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File pre-build.ps1</Command>
@@ -185,8 +194,11 @@ robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
     <PostBuildEvent>
       <Command>if not exist "$(OutputPath)shaders" mkdir "$(OutputPath)shaders"
 robocopy "$(ProjectDir)shaders/compiled" "$(OutputPath)shaders"
-robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
-      <Message>Post-build: copying SPIR-V shader byte code files and Vulkan layer settings.</Message>
+robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt
+
+if not exist "$(OutputPath)objects" mkdir "$(OutputPath)objects"
+robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
+      <Message>Post-build: copying SPIR-V shader byte code files, Vulkan layer settings and object files.</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -194,21 +206,37 @@ robocopy "$(ProjectDir)/" "$(OutputPath)/" vk_layer_settings.txt</Command>
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="animation_app.hpp" />
+    <ClInclude Include="convex_body.hpp" />
+    <ClInclude Include="body_app.hpp" />
+    <ClInclude Include="bounds.hpp" />
     <ClInclude Include="app_base.hpp" />
     <ClInclude Include="artist.hpp" />
     <ClInclude Include="assets.hpp" />
+    <ClInclude Include="convex_polygon.hpp" />
+    <ClInclude Include="convex_polygon_app.hpp" />
+    <ClInclude Include="curve.hpp" />
     <ClInclude Include="debug_manager.hpp" />
     <ClInclude Include="device.hpp" />
+    <ClInclude Include="direction.hpp" />
     <ClInclude Include="environment.hpp" />
     <ClInclude Include="extensions.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="pipeline.hpp" />
+    <ClInclude Include="primitives.hpp" />
+    <ClInclude Include="camera.hpp" />
     <ClInclude Include="swapchain.hpp" />
     <ClInclude Include="synchronizer.hpp" />
-    <ClInclude Include="vertex_manager.hpp" />
+    <ClInclude Include="tetrahedron.hpp" />
+    <ClInclude Include="transformations.hpp" />
+    <ClInclude Include="triangle.hpp" />
+    <ClInclude Include="memory_manager.hpp" />
     <ClInclude Include="window.hpp" />
+    <ClInclude Include="wire.hpp" />
+    <ClInclude Include="wireframe.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="cpp.hint" />
     <None Include="pre-build.ps1" />
     <None Include="vulkan.ruleset" />
   </ItemGroup>

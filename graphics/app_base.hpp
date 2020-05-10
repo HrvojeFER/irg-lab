@@ -11,9 +11,8 @@
 
 namespace irglab
 {
-    class app_base
+    struct app_base
     {
-    public:
         static inline const std::string_view default_name = "Graphics App";
         const std::string_view name;
 
@@ -35,9 +34,7 @@ namespace irglab
         	
             while (!window_.should_close())
             {
-                window_.process_events();
-
-                artist_.draw_frame();
+                loop();
             }
 
             artist_.wait_idle();
@@ -48,6 +45,13 @@ namespace irglab
     	
     protected:
         virtual void pre_run() { }
+
+    	virtual void loop()
+        {
+            window_.process_events();
+
+            artist_.draw_frame();
+        }
 
         window window_;
 

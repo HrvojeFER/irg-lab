@@ -6,12 +6,15 @@
 #include <stdexcept>
 #include <functional>
 #include <optional>
+#include <type_traits>
 
 // Streams, IO, strings
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cctype>
+#include <regex>
 
 // UINT32_MAX and UINT64 needed
 #include <cstdint>
@@ -36,8 +39,12 @@
 
 // Math
 #define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_SIZE_T_LENGTH
+#if defined(NDEBUG)
+#define GLM_FORCE_INTRINSICS
+#endif
 #include "glm.hpp"
+#include "gtx/string_cast.hpp"
 
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include "vulkan/vulkan.hpp"

@@ -22,7 +22,7 @@ namespace irglab
             render_pass_{ create_render_pass(device, swapchain) },
             pipeline_layout_{ create_pipeline_layout(device) },
 
-			vertex_shader_code_{ read_file(compiled_shader_paths.vertex) },
+			vertex_shader_code_{ read_shader_file(compiled_shader_paths.vertex) },
             vertex_shader_module_
 				{
 					create_shader_module(
@@ -32,7 +32,7 @@ namespace irglab
 							vertex_shader_code_,
 							device)
 				},
-			fragment_shader_code_{ read_file(compiled_shader_paths.fragment) },
+			fragment_shader_code_{ read_shader_file(compiled_shader_paths.fragment) },
             fragment_shader_module_
 			{
 				create_shader_module(
@@ -217,7 +217,7 @@ namespace irglab
                 });
 
 #if !defined(NDEBUG)
-            std::cout << name << "shader module created" << std::endl;
+            std::cout << name << "Shader module created." << std::endl;
 #endif
 
             return result;
@@ -361,7 +361,8 @@ namespace irglab
                 }
             };
 
-            auto result = device->createGraphicsPipelineUnique(nullptr,
+            auto result = device->createGraphicsPipelineUnique(
+                nullptr,
                 {
                     {},
                     static_cast<unsigned int>(shader_stages_create_info.size()),
