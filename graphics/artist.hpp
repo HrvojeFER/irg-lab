@@ -10,7 +10,7 @@
 
 #include "device.hpp"
 #include "swapchain.hpp"
-#include "vertex_manager.hpp"
+#include "memory_manager.hpp"
 #include "pipeline.hpp"
 
 
@@ -18,12 +18,12 @@ namespace irglab
 {
 	struct artist
 	{
-		artist(const environment& environment, window& window) :
+		artist(const environment& environment, const std::shared_ptr<window>& window) : 
 			window_{ window },
-			device_{ environment, window_ },
-			vertex_manager_{ device_ },
-			swapchain_{ device_, window_ },
-			pipeline_{ device_, swapchain_, vertex_manager_ },
+			device_{ environment, *window },
+			memory_manager_{ device_ },
+			swapchain_{ device_, *window },
+			pipeline_{ device_, swapchain_, memory_manager_ },
 			sync_
 				{
 					device_,
@@ -45,7 +45,7 @@ namespace irglab
 					}
 				}
 		{
-			window_.on_resize([&](vk::Extent2D)
+			window->on_resize([&](vk::Extent2D)
 				{
 					window_resized_ = true;
 				});
@@ -55,20 +55,22 @@ namespace irglab
 #endif
 		}
 
+		void switch_window(const std::shared_ptr<window>& window)
+		{
+			window_ = window;
+			register_new_window(*window);
+			adapt();
+		}
+		
 
+		// ReSharper disable CppExpressionWithoutSideEffects
         void draw_frame()
         {
-            if (device_->waitForFences(
+	        device_->waitForFences(
                 sync_.fence(in_flight, current_frame_),
                 VK_TRUE,
-                UINT64_MAX) // Means there is no timeout
-                != vk::Result::eSuccess)
-            {
-                std::cerr << "Failed waiting for in flight fence." << std::endl;
-                return;
-            }
+                UINT64_MAX); // Means there is no timeout
 
-			
 			unsigned int image_index;
 			try
 			{
@@ -93,18 +95,14 @@ namespace irglab
 			}
 
 			
-			if (const auto image_in_flight_pair = 
-					image_in_flight_fence_indices_.find(image_index); 
-				image_in_flight_pair != image_in_flight_fence_indices_.end())
+			if (const auto image_in_flight_index = 
+					image_in_flight_fence_indices_[image_index]
+				; image_in_flight_index.has_value())
 			{
-				if (device_->waitForFences(
-					sync_.fence(in_flight, image_in_flight_pair->second),
+				device_->waitForFences(
+					sync_.fence(in_flight, image_in_flight_index.value()),
 					VK_TRUE,
-					UINT64_MAX) != vk::Result::eSuccess)
-				{
-					std::cerr << "Failed waiting for in flight image fence." << std::endl;
-					return;
-				}
+					UINT64_MAX);
 			}
 			
 			image_in_flight_fence_indices_[image_index] = current_frame_;
@@ -112,10 +110,6 @@ namespace irglab
             device_->resetFences(sync_.fence(in_flight, current_frame_));
 
 			
-			std::array<vk::PipelineStageFlags, 1> wait_stages
-			{
-				vk::PipelineStageFlagBits::eColorAttachmentOutput
-			};
             device_.graphics_queue.submit(
                 {
 	                {
@@ -153,15 +147,16 @@ namespace irglab
 				adapt();
 				return;
             }
-			if (present_result == vk::Result::eErrorOutOfDateKHR)
+			if (present_result == vk::Result::eSuboptimalKHR)
 			{
 #if !defined(NDEBUG)
-				std::cerr << "Swapchain is outdated." << std::endl;
+				std::cerr << "Swapchain is suboptimal." << std::endl;
 #endif
 
 				adapt();
 				return;
 			}
+			
 			if (window_resized_)
 			{
 #if !defined(NDEBUG)
@@ -172,29 +167,18 @@ namespace irglab
 				adapt();
 				return;
 			}
-			if	(present_result == vk::Result::eSuboptimalKHR)
-			{
-#if !defined(NDEBUG)
-				std::cerr << "Swapchain is suboptimal." << std::endl;
-#endif
-
-				adapt();
-				return;
-			}
-			if (present_result != vk::Result::eSuccess)
-			{
-				throw std::runtime_error("Failed to present image.");
-			}
 
 			
             current_frame_ = (current_frame_ + 1) % max_frames_in_flight;
         }
+		// ReSharper enable CppExpressionWithoutSideEffects
 
 		void wait_idle() const
 		{
 			device_->waitIdle();
 		}
 
+		
 		using wire = std::pair<vertex, vertex>;
 
 		void set_wires_to_draw(const std::vector<wire>& wires) const
@@ -210,45 +194,72 @@ namespace irglab
 
 		void set_vertices_to_draw(std::vector<vertex> vertices) const
 		{
-			vertex_manager_.set_buffer(std::move(vertices));
+			memory_manager_.set_vertex_buffer(std::move(vertices));
 		}
 		
+		
 	private:
-		window& window_;
+		std::weak_ptr<const window> window_;
 		
 		const device device_;
-		const vertex_manager vertex_manager_;
+		memory_manager memory_manager_;
 		swapchain swapchain_;
 		pipeline pipeline_;
 
-		static const unsigned int max_frames_in_flight = 2;
+		static constexpr std::array<vk::PipelineStageFlags, 1> wait_stages
+		{
+			vk::PipelineStageFlagBits::eColorAttachmentOutput
+		};
+		
+		static inline const unsigned int max_frames_in_flight = 2;
 
+		using synchronizer = synchronizer<true>;
+		
 		inline static const synchronizer::key in_flight{};
 		inline static const synchronizer::key image_available{};
 		inline static const synchronizer::key render_finished{};
 		const synchronizer sync_;
 
-		std::unordered_map<size_t, size_t> image_in_flight_fence_indices_{};
+		std::vector<std::optional<size_t>> image_in_flight_fence_indices_{ max_frames_in_flight };
 		bool window_resized_ = false;
         size_t current_frame_ = 0;
 
+		
+		void register_new_window(window& window)
+		{
+			window.on_resize([&](vk::Extent2D)
+				{
+					window_resized_ = true;
+				});
+		}
+		
 		void adapt()
 		{
-			auto window_extent = window_.query_extent();
-			while (window_extent.width == 0 || window_extent.height == 0)
+			if (!window_.expired())
 			{
-				window_extent = window_.query_extent();
-				window_.wait_events();
-			}
-			
-			wait_idle();
+				const auto shared_window = window_.lock();
+				
+				auto window_extent = shared_window->query_extent();
+				while (window_extent.width == 0 || window_extent.height == 0)
+				{
+					window_extent = shared_window->query_extent();
+					shared_window->wait_events();
+				}
 
-			swapchain_.reconstruct(device_, window_);
-			pipeline_.reconstruct(device_, swapchain_);
-			
+				wait_idle();
+
+				swapchain_.reconstruct(device_, *shared_window);
+				pipeline_.reconstruct(device_, swapchain_, memory_manager_);
+
 #if !defined(NDEBUG)
-			std::cout << std::endl << "---- Artist adapted ----" << std::endl << std::endl << std::endl;
+				std::cout << std::endl << "---- Artist adapted ----" << std::endl << 
+					std::endl << std::endl;
 #endif
+			}
+			else
+			{
+				throw std::runtime_error("Artist couldn't adapt because the window expired.");
+			}
 		}
 	};
 }

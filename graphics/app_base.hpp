@@ -13,26 +13,29 @@ namespace irglab
 {
     struct app_base
     {
-        static inline const std::string_view default_name = "Graphics App";
-        const std::string_view name;
-
+        static constexpr std::string_view default_name = "Graphics App";
+    	
         explicit app_base(const std::string_view name = default_name) :
-            window_{ environment_, name },
+            window_{ std::make_shared<window>(window{environment_, name}) },
             artist_{ environment_, window_ } { }
 
+        const std::string_view name;
+
+    	
         virtual ~app_base() = default;
         app_base(app_base&) = delete;
         app_base(app_base&&) = delete;
         app_base& operator =(app_base&) = delete;
         app_base& operator =(app_base&&) = delete;
 
+    	
         void run()&&
         {
             pre_run();
 
-            window_.show();
+            window_->show();
         	
-            while (!window_.should_close())
+            while (!window_->should_close())
             {
                 loop();
             }
@@ -40,22 +43,25 @@ namespace irglab
             artist_.wait_idle();
         }
 
-    private:
-        environment environment_;
     	
     protected:
         virtual void pre_run() { }
 
-    	virtual void loop()
+        virtual void loop()
         {
-            window_.process_events();
+            window_->process_events();
 
             artist_.draw_frame();
         }
 
-        window window_;
+
+        std::shared_ptr<window> window_;
 
         artist artist_;
+
+    	
+    private:
+        environment environment_{};
     };
 }
 

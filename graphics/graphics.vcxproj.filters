@@ -13,20 +13,29 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\geometry">
-      <UniqueIdentifier>{f5dd1e83-a96f-4b9f-906a-37ef6b30fdba}</UniqueIdentifier>
+    <Filter Include="Resource Files\Shaders">
+      <UniqueIdentifier>{bbe5a5ad-8d67-4457-9eb7-bb108c787090}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\graphics">
-      <UniqueIdentifier>{d9940276-49e8-4f16-bc0f-23ca7ce4de4b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\app">
+    <Filter Include="Header Files\App">
       <UniqueIdentifier>{bf460a72-146f-44d2-b04b-e887db24ebab}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\environment">
+    <Filter Include="Header Files\Environment">
       <UniqueIdentifier>{685e1b48-e55d-4328-a691-fa522696af27}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\geometry\bodies">
+    <Filter Include="Header Files\Geometry">
+      <UniqueIdentifier>{f5dd1e83-a96f-4b9f-906a-37ef6b30fdba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Graphics">
+      <UniqueIdentifier>{d9940276-49e8-4f16-bc0f-23ca7ce4de4b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Objects">
+      <UniqueIdentifier>{e6098cb5-d700-4326-b3e5-35679e33a404}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Geometry\Bodies">
       <UniqueIdentifier>{a2908fcc-ebe0-43fb-ada2-c76f9e18ccb2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Geometry\Simple">
+      <UniqueIdentifier>{47994554-8f8b-4b41-9396-ae7cced1b8cc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -45,90 +54,116 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="convex_polygon.hpp">
-      <Filter>Header Files\geometry</Filter>
+      <Filter>Header Files\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="synchronizer.hpp">
-      <Filter>Header Files\graphics</Filter>
+      <Filter>Header Files\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="swapchain.hpp">
-      <Filter>Header Files\graphics</Filter>
+      <Filter>Header Files\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="pipeline.hpp">
-      <Filter>Header Files\graphics</Filter>
+      <Filter>Header Files\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="device.hpp">
-      <Filter>Header Files\graphics</Filter>
+      <Filter>Header Files\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="artist.hpp">
-      <Filter>Header Files\graphics</Filter>
+      <Filter>Header Files\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="app_base.hpp">
-      <Filter>Header Files\app</Filter>
+      <Filter>Header Files\App</Filter>
     </ClInclude>
     <ClInclude Include="body_app.hpp">
-      <Filter>Header Files\app</Filter>
+      <Filter>Header Files\App</Filter>
     </ClInclude>
     <ClInclude Include="assets.hpp">
-      <Filter>Header Files\environment</Filter>
+      <Filter>Header Files\Environment</Filter>
     </ClInclude>
     <ClInclude Include="debug_manager.hpp">
-      <Filter>Header Files\environment</Filter>
+      <Filter>Header Files\Environment</Filter>
     </ClInclude>
     <ClInclude Include="environment.hpp">
-      <Filter>Header Files\environment</Filter>
+      <Filter>Header Files\Environment</Filter>
     </ClInclude>
     <ClInclude Include="window.hpp">
-      <Filter>Header Files\environment</Filter>
-    </ClInclude>
-    <ClInclude Include="direction.hpp">
-      <Filter>Header Files\geometry</Filter>
+      <Filter>Header Files\Environment</Filter>
     </ClInclude>
     <ClInclude Include="triangle.hpp">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="primitives.hpp">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="transformations.hpp">
-      <Filter>Header Files\geometry</Filter>
+      <Filter>Header Files\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="wireframe.hpp">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="bounds.hpp">
-      <Filter>Header Files\geometry</Filter>
+      <Filter>Header Files\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="tetrahedron.hpp">
-      <Filter>Header Files\geometry\bodies</Filter>
+      <Filter>Header Files\Geometry\Bodies</Filter>
     </ClInclude>
     <ClInclude Include="convex_body.hpp">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="wire.hpp">
-      <Filter>Header Files\geometry</Filter>
+      <Filter>Header Files\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="camera.hpp">
-      <Filter>Header Files\geometry</Filter>
+      <Filter>Header Files\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="curve.hpp">
-      <Filter>Header Files\geometry</Filter>
+      <Filter>Header Files\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="animation_app.hpp">
-      <Filter>Header Files\app</Filter>
+      <Filter>Header Files\App</Filter>
     </ClInclude>
     <ClInclude Include="convex_polygon_app.hpp">
-      <Filter>Header Files\app</Filter>
+      <Filter>Header Files\App</Filter>
     </ClInclude>
     <ClInclude Include="memory_manager.hpp">
-      <Filter>Header Files\graphics</Filter>
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="shader_manager.hpp">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="bounds.hpp">
+      <Filter>Header Files\Geometry\Simple</Filter>
+    </ClInclude>
+    <ClInclude Include="direction.hpp">
+      <Filter>Header Files\Geometry\Simple</Filter>
+    </ClInclude>
+    <ClInclude Include="primitives.hpp">
+      <Filter>Header Files\Geometry\Simple</Filter>
+    </ClInclude>
+    <ClInclude Include="transformations.hpp">
+      <Filter>Header Files\Geometry\Simple</Filter>
+    </ClInclude>
+    <ClInclude Include="wire.hpp">
+      <Filter>Header Files\Geometry\Simple</Filter>
+    </ClInclude>
+    <ClInclude Include="render_pass.hpp">
+      <Filter>Header Files\Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="pre-build.ps1" />
     <None Include="vulkan.ruleset" />
     <None Include="cpp.hint" />
+    <None Include="shaders\fragment_shader.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="shaders\vertex_shader.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="vk_layer_settings.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="objects\cube.obj">
+      <Filter>Resource Files\Objects</Filter>
+    </Object>
+    <Object Include="objects\reference_plane.obj">
+      <Filter>Resource Files\Objects</Filter>
+    </Object>
+    <Object Include="objects\teddy.obj">
+      <Filter>Resource Files\Objects</Filter>
+    </Object>
+    <Object Include="objects\tetrahedron.obj">
+      <Filter>Resource Files\Objects</Filter>
+    </Object>
   </ItemGroup>
 </Project>

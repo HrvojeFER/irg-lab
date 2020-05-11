@@ -14,7 +14,7 @@
 
 namespace irglab
 {
-	struct body_app final : app_base
+	struct [[maybe_unused]] body_app final : app_base
 	{
 		explicit body_app(
 			const std::string& path_to_body_file = "./objects/cube.obj"
@@ -58,7 +58,7 @@ namespace irglab
 		void setup_movement()
 		{
 			// Move inward
-			window_.on_key(GLFW_KEY_W, GLFW_PRESS,
+			window_->on_key(GLFW_KEY_W, GLFW_PRESS,
 				[&]()
 				{
 					camera_.move_inward(step_size);
@@ -80,7 +80,7 @@ namespace irglab
 		});
 
 			// Move left
-			window_.on_key(GLFW_KEY_A, GLFW_PRESS,
+			window_->on_key(GLFW_KEY_A, GLFW_PRESS,
 				[&]()
 				{
 					camera_.move_left(step_size);
@@ -90,7 +90,7 @@ namespace irglab
 						std::cout << "Step away from the body, you wretched beast!" << std::endl;
 #endif
 						camera_.move_right(step_size);
-				}
+					}
 #if !defined(NDEBUG)
 					else
 					{
@@ -102,7 +102,7 @@ namespace irglab
 	});
 
 			// Move outward
-			window_.on_key(GLFW_KEY_S, GLFW_PRESS,
+			window_->on_key(GLFW_KEY_S, GLFW_PRESS,
 				[&]()
 				{
 					camera_.move_outward(step_size);
@@ -124,7 +124,7 @@ namespace irglab
 });
 
 			// Move right
-			window_.on_key(GLFW_KEY_D, GLFW_PRESS,
+			window_->on_key(GLFW_KEY_D, GLFW_PRESS,
 				[&]()
 				{
 					camera_.move_right(step_size);
@@ -147,7 +147,7 @@ namespace irglab
 
 
 			// View up
-			window_.on_key(GLFW_KEY_I, GLFW_PRESS,
+			window_->on_key(GLFW_KEY_I, GLFW_PRESS,
 				[&]()
 				{
 					camera_.view_up(angle_step);
@@ -156,7 +156,7 @@ namespace irglab
 				});
 
 			// View left
-			window_.on_key(GLFW_KEY_J, GLFW_PRESS,
+			window_->on_key(GLFW_KEY_J, GLFW_PRESS,
 				[&]()
 				{
 					camera_.view_left(angle_step);
@@ -164,7 +164,7 @@ namespace irglab
 				});
 
 			// View down
-			window_.on_key(GLFW_KEY_K, GLFW_PRESS,
+			window_->on_key(GLFW_KEY_K, GLFW_PRESS,
 				[&]()
 				{
 					camera_.view_down(angle_step);
@@ -172,7 +172,7 @@ namespace irglab
 				});
 
 			// View right
-			window_.on_key(GLFW_KEY_L, GLFW_PRESS,
+			window_->on_key(GLFW_KEY_L, GLFW_PRESS,
 				[&]()
 				{
 					camera_.view_right(angle_step);
@@ -180,7 +180,7 @@ namespace irglab
 				});
 
 
-			window_.on_resize(
+			window_->on_resize(
 				[&](vk::Extent2D)
 				{
 					set_scene_for_drawing();
@@ -307,7 +307,7 @@ namespace irglab
 				}
 			}
 #endif
-			const auto window_extent = window_.query_extent();
+			const auto window_extent = window_->query_extent();
 			const auto aspect_ratio = window_extent.width / 
 				static_cast<float>(window_extent.height);
 

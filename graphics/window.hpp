@@ -11,11 +11,6 @@ namespace irglab
 {
 	struct window
 	{
-		static inline const std::string_view default_title{ "Window" };
-		static inline const vk::Extent2D default_initial_size{ 600, 600 };
-
-		const std::string_view title;
-
 		using resize_callback = std::function<void(vk::Extent2D)>;
 		using key_callback = std::function<void()>;
 		struct cursor_position
@@ -24,7 +19,11 @@ namespace irglab
 			double y;
 		};
 		using mouse_button_callback = std::function<void(cursor_position)>;
-		
+
+
+		static constexpr std::string_view default_title{ "Window" };
+		static constexpr vk::Extent2D default_initial_size{ 600, 600 };
+
 		explicit window(
 			const environment& environment,
 			const std::string_view title = default_title,
@@ -43,7 +42,8 @@ namespace irglab
 			std::cout << std::endl << "-- Window done --" << std::endl << std::endl;
 #endif
 		}
-
+		
+		const std::string title;
 
 		[[nodiscard]] const vk::SurfaceKHR& drawing_surface() const noexcept
 		{
@@ -76,6 +76,7 @@ namespace irglab
 			glfwPollEvents();
 		}
 
+		
 		// ReSharper disable once CppMemberFunctionMayBeStatic
 		void wait_events() const
 		{
@@ -107,7 +108,60 @@ namespace irglab
 			glfwSetWindowShouldClose(inner_.get(), GLFW_TRUE);
 		}
 
+		
 	private:
+		// ReSharper disable CppParameterMayBeConst
+		// ReSharper disable CppParameterNeverUsed
+		static void glfw_resize_callback(GLFWwindow* window, int width, int height)
+		{
+			const auto this_ = reinterpret_cast<irglab::window*>(
+				glfwGetWindowUserPointer(window));
+
+			for (const auto& resize_callback : this_->resize_callbacks_)
+			{
+				resize_callback(
+					{
+						static_cast<unsigned int>(width),
+						static_cast<unsigned int>(height)
+					});
+			}
+		}
+
+		static void glfw_key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)
+		{
+			auto this_ = reinterpret_cast<irglab::window*>(
+				glfwGetWindowUserPointer(window));
+
+			for (const auto& key_callback : this_->key_callbacks_[key][action])
+			{
+				key_callback();
+			}
+
+			for (const auto& oneshot_key_callback :
+				this_->oneshot_key_callbacks_[key][action])
+			{
+				oneshot_key_callback();
+			}
+
+			this_->oneshot_key_callbacks_.clear();
+		}
+
+		static void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+		{
+			auto this_ = reinterpret_cast<irglab::window*>(
+				glfwGetWindowUserPointer(window));
+
+			cursor_position cursor_position{};
+			glfwGetCursorPos(window, &cursor_position.x, &cursor_position.y);
+
+			for (const auto& mouse_button_callback :
+				this_->mouse_button_callbacks_[button][action])
+			{
+				mouse_button_callback(cursor_position);
+			}
+		}
+
+		
 		const std::unique_ptr<GLFWwindow, std::function<void(GLFWwindow*)>> inner_;
 		const vk::UniqueSurfaceKHR drawing_surface_;
 
@@ -173,59 +227,6 @@ namespace irglab
 			std::cout << "Drawing surface created" << std::endl;
 #endif
 			return result;
-		}
-
-		// ReSharper disable CppParameterMayBeConst
-		// ReSharper disable CppParameterNeverUsed
-		static void glfw_resize_callback(GLFWwindow* window, int width, int height)
-		{
-			const auto this_ = reinterpret_cast<irglab::window*>(
-				glfwGetWindowUserPointer(window));
-
-			for (const auto& resize_callback : this_->resize_callbacks_)
-			{
-				resize_callback(
-					{
-						static_cast<unsigned int>(width),
-						static_cast<unsigned int>(height)
-					});
-			}
-		}
-
-		static void glfw_key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)
-		{
-			auto this_ = reinterpret_cast<irglab::window*>(
-				glfwGetWindowUserPointer(window));
-
-			for (const auto& key_callback : this_->key_callbacks_[key][action])
-			{
-				key_callback();
-			}
-
-			for (const auto& oneshot_key_callback : 
-				this_->oneshot_key_callbacks_[key][action])
-			{
-				oneshot_key_callback();
-			}
-
-			this_->oneshot_key_callbacks_.clear();
-		}
-
-		static void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-		{
-			auto this_ = reinterpret_cast<irglab::window*>(
-				glfwGetWindowUserPointer(window));
-
-			cursor_position cursor_position{};
-			glfwGetCursorPos(window, &cursor_position.x, &cursor_position.y);
-
-			const auto cursor_position_const{ cursor_position };
-
-			for (const auto& mouse_button_callback : 
-				this_->mouse_button_callbacks_[button][action])
-			{
-				mouse_button_callback(cursor_position_const);
-			}
 		}
 	};
 }

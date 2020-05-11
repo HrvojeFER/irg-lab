@@ -231,23 +231,29 @@ namespace irglab
 
 		for (const auto& line : lines)
 		{
-			if (line[0] == '#')
-			{
-				comment_count++;
-				continue;
-			}
-
 			std::istringstream line_stream{ line };
 
 			char first;
 			line_stream >> first;
 
+			if (first == '#')
+			{
+				comment_count++;
+				continue;
+			}
+
 			if (first == 'v')
 			{
-				float x, y, z;
-				line_stream >> x >> y >> z;
+				char second;
+				line_stream >> second;
 
-				vertices.emplace_back(triangle::vertex{ x, y, z, 1.0f });
+				if (second != 'n' && second != 'p' && second != 't')
+				{
+					float x, y, z;
+					line_stream >> x >> y >> z;
+
+					vertices.emplace_back(triangle::vertex{ x, y, z, 1.0f });
+				}
 			}
 			else if (first == 'f')
 			{
@@ -264,7 +270,7 @@ namespace irglab
 					});
 			}
 			
-			else
+			else if (first != 'g' || first != 'm')
 			{
 				error_count++;
 			}

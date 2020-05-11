@@ -206,6 +206,11 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
+<<<<<<< HEAD
+    <ClInclude Include="app_base.hpp" />
+    <ClInclude Include="artist.hpp" />
+    <ClInclude Include="assets.hpp" />
+=======
     <ClInclude Include="animation_app.hpp" />
     <ClInclude Include="convex_body.hpp" />
     <ClInclude Include="body_app.hpp" />
@@ -216,6 +221,7 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClInclude Include="convex_polygon.hpp" />
     <ClInclude Include="convex_polygon_app.hpp" />
     <ClInclude Include="curve.hpp" />
+>>>>>>> lab3
     <ClInclude Include="debug_manager.hpp" />
     <ClInclude Include="device.hpp" />
     <ClInclude Include="direction.hpp" />
@@ -225,8 +231,6 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClInclude Include="pipeline.hpp" />
     <ClInclude Include="primitives.hpp" />
     <ClInclude Include="camera.hpp" />
-    <ClInclude Include="render_pass.hpp" />
-    <ClInclude Include="shader_manager.hpp" />
     <ClInclude Include="swapchain.hpp" />
     <ClInclude Include="synchronizer.hpp" />
     <ClInclude Include="tetrahedron.hpp" />
@@ -240,12 +244,6 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
   <ItemGroup>
     <None Include="cpp.hint" />
     <None Include="pre-build.ps1" />
-    <None Include="shaders\fragment_shader.frag">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="shaders\vertex_shader.vert">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
     <None Include="vulkan.ruleset" />
   </ItemGroup>
   <ItemGroup>
@@ -256,20 +254,6 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="objects\cube.obj">
-      <DeploymentContent>true</DeploymentContent>
-    </Object>
-    <Object Include="objects\reference_plane.obj">
-      <DeploymentContent>true</DeploymentContent>
-    </Object>
-    <Object Include="objects\teddy.obj">
-      <DeploymentContent>true</DeploymentContent>
-    </Object>
-    <Object Include="objects\tetrahedron.obj">
-      <DeploymentContent>true</DeploymentContent>
-    </Object>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

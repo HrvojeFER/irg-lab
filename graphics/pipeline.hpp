@@ -4,9 +4,12 @@
 
 #include "pch.hpp"
 
-#include "assets.hpp"
+#include "device.hpp"
 #include "swapchain.hpp"
-#include "vertex_manager.hpp"
+#include "memory_manager.hpp"
+
+#include "render_pass.hpp"
+#include "shader_manager.hpp"
 #include "synchronizer.hpp"
 
 
@@ -14,44 +17,51 @@ namespace irglab
 {
 	struct pipeline
 	{
+        struct compiled_shader_paths
+        {
+            std::string vertex;
+            std::string fragment;
+        } static inline const compiled_shader_paths
+        {
+    #if !defined(NDEBUG)
+            "./shaders/compiled/vertex_shader.spirv",
+            "./shaders/compiled/fragment_shader.spirv"
+    #else
+            "./shaders/compiled/vertex_shader.spirv",
+            "./shaders/compiled/fragment_shader.spirv"
+    #endif
+        };
+
 		explicit pipeline(
             const device& device,
             const swapchain& swapchain,
-            const vertex_manager& vertex_manager) :
+            const memory_manager& memory_manager) :
 		
-            render_pass_{ create_render_pass(device, swapchain) },
-            pipeline_layout_{ create_pipeline_layout(device) },
+            render_pass_{ device, swapchain },
 
-			vertex_shader_code_{ read_shader_file(compiled_shader_paths.vertex) },
-            vertex_shader_module_
-				{
-					create_shader_module(
-#if !defined(NDEBUG)
-							"Vertex",
-#endif
-							vertex_shader_code_,
-							device)
-				},
-			fragment_shader_code_{ read_shader_file(compiled_shader_paths.fragment) },
-            fragment_shader_module_
+            shader_manager_
 			{
-				create_shader_module(
-#if !defined(NDEBUG)
-						"Fragment",
-#endif
-						fragment_shader_code_,
-						device)
-			},
+                {
+	                {
+		                vk::ShaderStageFlagBits::eVertex,
+	                	compiled_shader_paths.vertex
+	                },
+					{
+						vk::ShaderStageFlagBits::eFragment,
+						compiled_shader_paths.fragment
+					}
+                },
+				device
+            },
 
+            pipeline_layout_{ create_pipeline_layout(device) },
 			inner_{ create_inner(device, swapchain) },
 
 			image_views_{ create_image_views(device, swapchain) },
             framebuffers_{ create_frame_buffers(device, swapchain) },
 
-            vertex_manager_{ vertex_manager },
-		
 			draw_command_pool_{ create_draw_command_pool(device) },
-            draw_command_buffers_{ create_draw_command_buffers(device, swapchain) }
+            draw_command_buffers_{ create_draw_command_buffers(device, swapchain, memory_manager) }
 		{
 #if !defined(NDEBUG)
             std::cout << std::endl << "-- Pipeline done --" << std::endl << std::endl;
@@ -66,121 +76,41 @@ namespace irglab
 		[[nodiscard]] std::vector<std::reference_wrapper<const vk::CommandBuffer>> command_buffers()
 			const
 		{
-            return dereference_handles(draw_command_buffers_);
+            return dereference_vulkan_handles(draw_command_buffers_);
 		}
 
-        void reconstruct(const device& device, const swapchain& swapchain)
+		
+        void reconstruct(
+            const device& device, 
+            const swapchain& swapchain, 
+            const memory_manager& memory_manager)
 		{
-            render_pass_ = create_render_pass(device, swapchain);
+            render_pass_.reconstruct(device, swapchain);
             inner_ = create_inner(device, swapchain);
             image_views_ = create_image_views(device, swapchain);
             framebuffers_ = create_frame_buffers(device, swapchain);
-            draw_command_buffers_ = create_draw_command_buffers(device, swapchain);
+            draw_command_buffers_ = create_draw_command_buffers(device, swapchain, memory_manager);
 #if !defined(NDEBUG)
             std::cout << std::endl << "-- Pipeline reconstructed --" << std::endl << std::endl;
 #endif
 		}
+
 		
 	private:
-        vk::UniqueRenderPass render_pass_;
+        render_pass render_pass_;
+
+        const shader_manager shader_manager_;
+
         vk::UniquePipelineLayout pipeline_layout_;
-
-        const char* shader_main_function_name_ = "main";
-        const std::vector<char> vertex_shader_code_;
-        const vk::UniqueShaderModule vertex_shader_module_;
-        const std::vector<char> fragment_shader_code_;
-        const vk::UniqueShaderModule fragment_shader_module_;
-
         vk::UniquePipeline inner_;
 
         std::vector<vk::UniqueImageView> image_views_;
         std::vector<vk::UniqueFramebuffer> framebuffers_;
 
-        const vertex_manager& vertex_manager_;
-		
         const vk::UniqueCommandPool draw_command_pool_;
         std::vector<vk::UniqueCommandBuffer> draw_command_buffers_;
 
-
-        [[nodiscard]] static vk::UniqueRenderPass create_render_pass(
-            const device& device,
-            const swapchain& swapchain)
-        {
-            std::vector<vk::AttachmentDescription> color_attachment_descriptions
-            {
-                vk::AttachmentDescription
-                {
-                    {},
-                    swapchain.get_configuration().format,
-                    vk::SampleCountFlagBits::e1,
-                    vk::AttachmentLoadOp::eClear,
-                    vk::AttachmentStoreOp::eStore,
-                    vk::AttachmentLoadOp::eDontCare,
-                    vk::AttachmentStoreOp::eDontCare,
-                    {},
-                    vk::ImageLayout::ePresentSrcKHR
-                }
-            };
-
-            std::vector<vk::AttachmentReference> color_attachment_references
-            {
-                vk::AttachmentReference
-                {
-                    0,
-                    vk::ImageLayout::eColorAttachmentOptimal
-                }
-            };
-
-            std::vector<vk::SubpassDescription> subpass_descriptions
-            {
-                vk::SubpassDescription
-                {
-                    {},
-                    vk::PipelineBindPoint::eGraphics,
-                    0,
-                    nullptr,
-                    static_cast<unsigned int>(color_attachment_references.size()),
-                    color_attachment_references.data(),
-                    nullptr,
-                    nullptr,
-                    0,
-                    nullptr
-                }
-            };
-
-            std::vector<vk::SubpassDependency> subpass_dependencies
-            {
-                vk::SubpassDependency
-                {
-                    VK_SUBPASS_EXTERNAL,
-                    0,
-                    vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                    vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                    {},
-                    vk::AccessFlagBits::eColorAttachmentRead
-                        | vk::AccessFlagBits::eColorAttachmentWrite,
-                    {}
-                }
-            };
-
-            auto result = device->createRenderPassUnique(
-                {
-                    {},
-                    static_cast<unsigned int>(color_attachment_descriptions.size()),
-                    color_attachment_descriptions.data(),
-                    static_cast<unsigned int>(subpass_descriptions.size()),
-                    subpass_descriptions.data(),
-                    static_cast<unsigned int>(subpass_dependencies.size()),
-                    subpass_dependencies.data()
-                });
-
-#if !defined(NDEBUG)
-            std::cout << "Render pass created" << std::endl;
-#endif
-
-            return result;
-        }
-
+		
         [[nodiscard]] static vk::UniquePipelineLayout create_pipeline_layout(const device& device)
         {
             std::vector<vk::DescriptorSetLayout> descriptor_set_layouts{};
@@ -202,51 +132,10 @@ namespace irglab
             return result;
         }
 
-        [[nodiscard]] static vk::UniqueShaderModule create_shader_module(
-#if !defined(NDEBUG)
-            const std::string_view name,
-#endif
-            const std::vector<char>& code,
-            const device& device)
-        {
-            auto result = device->createShaderModuleUnique(
-                {
-                    {},
-                    code.size(),
-                    reinterpret_cast<const unsigned int*>(code.data())
-                });
-
-#if !defined(NDEBUG)
-            std::cout << name << "Shader module created." << std::endl;
-#endif
-
-            return result;
-        }
-
         [[nodiscard]] vk::UniquePipeline create_inner(
             const device& device,
             const swapchain& swapchain) const
         {
-            std::vector<vk::PipelineShaderStageCreateInfo> shader_stages_create_info
-            {
-                vk::PipelineShaderStageCreateInfo
-                {
-                    {},
-                    vk::ShaderStageFlagBits::eVertex,
-                    *vertex_shader_module_,
-                    shader_main_function_name_,
-                    {}
-                },
-                vk::PipelineShaderStageCreateInfo
-                {
-                    {},
-                    vk::ShaderStageFlagBits::eFragment,
-                    *fragment_shader_module_,
-                    shader_main_function_name_,
-                    {}
-                }
-            };
-
             const auto vertex_input_binding_descriptions =
                 vertex::get_binding_descriptions();
             const auto vertex_input_attribute_descriptions =
@@ -308,7 +197,7 @@ namespace irglab
                 VK_FALSE,
                 vk::PolygonMode::eFill,
                 vk::CullModeFlagBits::eBack,
-                vk::FrontFace::eClockwise,
+                vk::FrontFace::eCounterClockwise,
                 VK_FALSE,
                 0.0f,
                 0.0f,
@@ -361,8 +250,12 @@ namespace irglab
                 }
             };
 
+            const auto& shader_stages_create_info = 
+                shader_manager_.shader_stages_create_info();
+        	
             auto result = device->createGraphicsPipelineUnique(
                 nullptr,
+                vk::GraphicsPipelineCreateInfo
                 {
                     {},
                     static_cast<unsigned int>(shader_stages_create_info.size()),
@@ -477,7 +370,8 @@ namespace irglab
 
         [[nodiscard]] std::vector<vk::UniqueCommandBuffer> create_draw_command_buffers(
 			const device& device,
-            const swapchain& swapchain) const
+            const swapchain& swapchain,
+            const memory_manager& memory_manager) const
         {
             auto command_buffers
             {
@@ -493,10 +387,10 @@ namespace irglab
             for (size_t i = 0; i < command_buffers.size(); ++i)
             {
                 command_buffers[i]->begin(
-                {
-                    {},
-                    nullptr
-                });
+                    {
+                        {},
+                        nullptr
+                    });
 
                 std::vector<vk::ClearValue> clear_values
                 {
@@ -516,38 +410,39 @@ namespace irglab
                 };
 
                 command_buffers[i]->beginRenderPass(
-		            {
-		                *render_pass_,
-		                *framebuffers_[i],
-		                vk::Rect2D
-		                {
-		                    { 0, 0 },
-		                    swapchain.get_configuration().extent
-		                },
-		                static_cast<unsigned int>(clear_values.size()),
-		                clear_values.data()
-		            }, 
+                    {
+                        *render_pass_,
+                        *framebuffers_[i],
+                        vk::Rect2D
+                        {
+                            { 0, 0 },
+                            swapchain.get_configuration().extent
+                        },
+                        static_cast<unsigned int>(clear_values.size()),
+                        clear_values.data()
+                    },
                     vk::SubpassContents::eInline);
 
-            	command_buffers[i]->bindPipeline(vk::PipelineBindPoint::eGraphics, *inner_);
+                command_buffers[i]->bindPipeline(vk::PipelineBindPoint::eGraphics, *inner_);
 
                 command_buffers[i]->bindVertexBuffers(0,
                     {
-                        vertex_manager_.buffer()
+                        memory_manager.buffer()
                     },
-                    {
-                    	vertex_manager_.buffer_offset
-                    });
-            	command_buffers[i]->draw(
-                    vertex_manager::vertex_count, 
+                {
+                    memory_manager::vertex_buffer_offset
+                });
+
+                command_buffers[i]->draw(
+                    memory_manager::vertex_count,
                     1,
-                    0, 
+                    0,
                     0);
 
-            	command_buffers[i]->endRenderPass();
+                command_buffers[i]->endRenderPass();
 
-            	command_buffers[i]->end();
-            }
+                command_buffers[i]->end();
+        	}
 
 #if !defined(NDEBUG)
             std::cout << "Command buffers created" << std::endl;

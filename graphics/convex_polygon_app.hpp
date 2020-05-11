@@ -71,7 +71,7 @@ namespace irglab
             std::cout << "Have fun! :)" << std::endl << std::endl;
 
         	
-            window_.on_mouse_button(GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS,
+            window_->on_mouse_button(GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS,
                 [&](const window::cursor_position& cursor_position)
                 {
                     std::cout << "Storing point at " << 
@@ -82,7 +82,7 @@ namespace irglab
                     cursor_positions_.push_back(cursor_position);
                 });
 
-            window_.on_key(GLFW_KEY_SPACE, GLFW_PRESS,
+            window_->on_key(GLFW_KEY_SPACE, GLFW_PRESS,
                 [&]()
                 {
                     std::cout << "Resetting stored points." << std::endl << std::endl;
@@ -90,7 +90,7 @@ namespace irglab
                     cursor_positions_.clear();
                 });
 
-            window_.on_key(GLFW_KEY_ENTER, GLFW_PRESS,
+            window_->on_key(GLFW_KEY_ENTER, GLFW_PRESS,
                 [&]()
                 {
                     std::cout << "Drawing convex polygon for the following points: " << std::endl;
@@ -145,7 +145,7 @@ namespace irglab
             		}
                 });
 
-            window_.on_mouse_button(GLFW_MOUSE_BUTTON_RIGHT, GLFW_PRESS,
+            window_->on_mouse_button(GLFW_MOUSE_BUTTON_RIGHT, GLFW_PRESS,
                 [&](const window::cursor_position& cursor_position)
                 {
                     if (convex_polygon_.has_value())
@@ -169,7 +169,7 @@ namespace irglab
                     }
                 });
 
-            window_.on_key(GLFW_KEY_DELETE, GLFW_PRESS,
+            window_->on_key(GLFW_KEY_DELETE, GLFW_PRESS,
                 [&]()
                 {
                     std::cout << "Resetting convex polygon." << std::endl << std::endl;
@@ -191,7 +191,7 @@ namespace irglab
             const auto bottom =
                 convex_polygon.get_vertex_on(irglab::bottom).y;
 
-            const auto step = 2.0f / static_cast<float>(window_.query_extent().height);
+            const auto step = 2.0f / static_cast<float>(window_->query_extent().height);
 
             std::vector<artist::wire> lines_for_drawing{};
 
@@ -279,7 +279,7 @@ namespace irglab
         [[nodiscard]] two_dimensional::cartesian_coordinates to_vulkan_friendly_coordinates(
             const window::cursor_position& cursor_position) const
         {
-            const auto window_extent = window_.query_extent();
+            const auto window_extent = window_->query_extent();
 
             const auto x = 2 * (cursor_position.x / window_extent.width) - 1;
             const auto y = 2 * (cursor_position.y / window_extent.height) - 1;

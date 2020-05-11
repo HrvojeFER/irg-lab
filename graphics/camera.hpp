@@ -1,5 +1,5 @@
-#ifndef IRGLAB_SCENE_HPP
-#define IRGLAB_SCENE_HPP
+#ifndef IRGLAB_CAMERA_HPP
+#define IRGLAB_CAMERA_HPP
 
 
 #include "pch.hpp"
@@ -11,7 +11,7 @@
 namespace irglab
 {
 	template<size DimensionCount>
-	struct camera_internal
+	struct [[maybe_unused]] camera_internal
 	{
 		using point = point<DimensionCount>;
 		using orthonormal_base = orthonormal_base<DimensionCount>;
@@ -33,7 +33,7 @@ namespace irglab
 
 
 	template<>
-	struct camera<2> final : camera_internal<2>
+	struct [[maybe_unused]] camera<2> final : camera_internal<2>
 	{
 		constexpr explicit camera(
 			const point& viewpoint = { 0.0f, 0.0f, 1.0f },
@@ -43,7 +43,7 @@ namespace irglab
 
 	
 	template<>
-	struct camera<3> final : camera_internal<3>
+	struct [[maybe_unused]] camera<3> final : camera_internal<3>
 	{
 		static inline const point origin = { 0.0f, 0.0f, 0.0f, 1.0f };
 		
@@ -168,12 +168,12 @@ namespace irglab
 
 namespace irglab::two_dimensional
 {
-	using camera = irglab::camera<dimension_count>;
+	using camera [[maybe_unused]] = irglab::camera<dimension_count>;
 }
 
 namespace irglab::three_dimensional
 {
-	using camera = irglab::camera<dimension_count>;
+	using camera [[maybe_unused]] = irglab::camera<dimension_count>;
 }
 
 #endif

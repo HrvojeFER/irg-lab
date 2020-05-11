@@ -1,12 +1,16 @@
-#ifndef GRAPHICS_PCH_HPP
-#define GRAPHICS_PCH_HPP
+#ifndef IRGLAB_PCH_HPP
+#define IRGLAB_PCH_HPP
 
 
-// Language "features"
+
+// C++ Standard Library
+
+// Language features
 #include <stdexcept>
 #include <functional>
 #include <optional>
 #include <type_traits>
+#include <utility>
 
 // Streams, IO, strings
 #include <fstream>
@@ -19,7 +23,7 @@
 // UINT32_MAX and UINT64 needed
 #include <cstdint>
 
-// Collections and such
+// STL
 #include <algorithm>
 #include <vector>
 #include <array>
@@ -27,17 +31,20 @@
 #include <map>
 #include <set>
 
-// Sleep
+// Threading
 #include <chrono>
 #include <thread>
 
 
+
+// GLFW - Windows and IO
 // GLFW includes vulkan.h with the following macro.
 // needed to create a drawing drawing_surface for Vulkan.
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 
-// Math
+
+// GLM - Math
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_SIZE_T_LENGTH
 #if defined(NDEBUG)
@@ -46,6 +53,8 @@
 #include "glm.hpp"
 #include "gtx/string_cast.hpp"
 
+
+// Vulkan - Graphics
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include "vulkan/vulkan.hpp"
 
