@@ -161,7 +161,7 @@ namespace irglab
 		[[nodiscard]] vk::UniqueSwapchainKHR create_inner(
 			const device& device,
 			const window& window,
-			const std::optional<vk::SwapchainKHR&> old = std::nullopt) const
+			const std::optional<vk::SwapchainKHR>& old = std::nullopt) const
 		{
 			vk::SwapchainCreateInfoKHR create_info =
 			{
