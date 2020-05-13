@@ -17,16 +17,21 @@ namespace irglab
 	struct [[maybe_unused]] body_app final : app_base
 	{
 		explicit body_app(
-			const std::string& path_to_body_file = "./objects/cube.obj"
+			const std::string& path_to_body_file = "./objects/tetrahedron.obj"
 #if !defined(NDEBUG)
 			,const std::string& path_to_reference_plane_file = "./objects/reference_plane.obj"
 #endif
 			) :
 			app_base{ "Body" },
-			body_{ three_dimensional::convex_body::parse(
-				read_object_file(path_to_body_file)).body }
+			body_{}
 		{
-			body_ &= vulkan_friendly_limit;
+			const auto body_parsing_report = three_dimensional::convex_body::parse(
+				read_object_file(path_to_body_file));
+			std::cout << body_parsing_report;
+
+			body_ = body_parsing_report.body;
+			std::cout << (body_ &= vulkan_friendly_limit);
+			
 #if !defined(NDEBUG)
 			reference_frame_ += three_dimensional::convex_body::parse(
 				read_object_file(path_to_reference_plane_file)).body;

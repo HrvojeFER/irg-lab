@@ -80,7 +80,8 @@ namespace irglab
 				"Vertices:" << std::endl <<
 				glm::to_string(triangle.first) << std::endl <<
 				glm::to_string(triangle.second) << std::endl <<
-				glm::to_string(triangle.third) << std::endl;
+				glm::to_string(triangle.third) << std::endl <<
+				std::endl;
 		}
 
 		

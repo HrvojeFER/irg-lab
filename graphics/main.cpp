@@ -9,7 +9,7 @@
 
 int main()
 {	
-	irglab::body_app{ }.run();
+	irglab::animation_app{ }.run();
 	
 	return EXIT_SUCCESS;
 }

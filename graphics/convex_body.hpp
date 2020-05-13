@@ -59,7 +59,7 @@ namespace irglab
 
 			for (const auto& triangle : body.triangles)
 			{
-				output_stream << triangle << std::endl;
+				output_stream << triangle;
 			}
 
 			return output_stream << std::endl;
@@ -244,16 +244,10 @@ namespace irglab
 
 			if (first == 'v')
 			{
-				char second;
-				line_stream >> second;
+				float x, y, z;
+				line_stream >> x >> y >> z;
 
-				if (second != 'n' && second != 'p' && second != 't')
-				{
-					float x, y, z;
-					line_stream >> x >> y >> z;
-
-					vertices.emplace_back(triangle::vertex{ x, y, z, 1.0f });
-				}
+				vertices.emplace_back(triangle::vertex{ x, y, z, 1.0f });
 			}
 			else if (first == 'f')
 			{
@@ -270,7 +264,7 @@ namespace irglab
 					});
 			}
 			
-			else if (first != 'g' && first != 'm')
+			else if (first != 'g')
 			{
 				error_count++;
 			}

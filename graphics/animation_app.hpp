@@ -18,7 +18,7 @@ namespace irglab
 	struct animation_app final : app_base
 	{
 		explicit animation_app(
-			const std::string& path_to_body_file = "./objects/cube.obj"
+			const std::string& path_to_body_file = "./objects/teddy.obj"
 #if !defined(NDEBUG)
 			, const std::string& path_to_reference_plane_file = "./objects/reference_plane.obj"
 #endif
