@@ -49,6 +49,8 @@ namespace irglab
 				{
 					window_resized_ = true;
 				});
+
+			image_in_flight_fence_indices_.resize(swapchain_.get_configuration_view().image_count);
 			
 #if !defined(NDEBUG)
 			std::cout << std::endl << "---- Artist done ----" << std::endl << std::endl << std::endl;
@@ -211,16 +213,14 @@ namespace irglab
 			vk::PipelineStageFlagBits::eColorAttachmentOutput
 		};
 		
-		static inline const unsigned int max_frames_in_flight = 2;
+		static inline const size_t max_frames_in_flight = 2;
 
-		using synchronizer = synchronizer<true>;
-		
-		inline static const synchronizer::key in_flight{};
-		inline static const synchronizer::key image_available{};
-		inline static const synchronizer::key render_finished{};
-		const synchronizer sync_;
+		inline static const synchronizer<>::key in_flight{};
+		inline static const synchronizer<>::key image_available{};
+		inline static const synchronizer<>::key render_finished{};
+		const synchronizer<> sync_;
 
-		std::vector<std::optional<size_t>> image_in_flight_fence_indices_{ max_frames_in_flight };
+		std::vector<std::optional<size_t>> image_in_flight_fence_indices_{};
 		bool window_resized_ = false;
         size_t current_frame_ = 0;
 

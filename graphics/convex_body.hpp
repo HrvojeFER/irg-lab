@@ -270,7 +270,7 @@ namespace irglab
 					});
 			}
 			
-			else if (first != 'g' || first != 'm')
+			else if (first != 'g' && first != 'm')
 			{
 				error_count++;
 			}

@@ -160,8 +160,9 @@ namespace irglab
 				mouse_button_callback(cursor_position);
 			}
 		}
+		// ReSharper enable CppParameterMayBeConst
+		// ReSharper enable CppParameterNeverUsed
 
-		
 		const std::unique_ptr<GLFWwindow, std::function<void(GLFWwindow*)>> inner_;
 		const vk::UniqueSurfaceKHR drawing_surface_;
 

@@ -22,30 +22,31 @@ namespace irglab
 
         using configuration = std::initializer_list<request>;
 
-		explicit shader_manager(configuration configuration, const device& device) :
+		explicit shader_manager(const configuration& configuration, const device& device) :
 			shader_module_indices_{ configuration.size() },
-			shader_modules_{ configuration.size() }
+			shader_modules_{ configuration.size() },
+			shader_stages_create_info_{ configuration.size() }
 		{
             size_t i = 0;
 			
 			for (const auto& request : configuration)
 			{
-                shader_modules_.emplace_back(create_shader_module(
+                shader_modules_[i] = create_shader_module(
 #if !defined(NDEBUG)
                     request.shader_stage_flag,
 #endif
                     read_shader_file(request.path),
                     device
-                ));
+                );
 
-                shader_module_indices_.emplace_back(shader_index
+                shader_module_indices_[i] = shader_index
                     {
                     	request.shader_stage_flag,
                     	i
-                    });
+                    };
 
-                shader_stages_create_info_.emplace_back(
-                    create_shader_stage_create_info(shader_module_indices_[i]));
+                shader_stages_create_info_[i] = 
+                    create_shader_stage_create_info(shader_module_indices_[i]);
 				
                 ++i;
 			}
@@ -61,8 +62,8 @@ namespace irglab
 	private:
 		struct shader_index
 		{
-            const vk::ShaderStageFlagBits shader_stage_flag;
-            const size_t index;
+            vk::ShaderStageFlagBits shader_stage_flag;
+            size_t index;
 		};
         std::vector<shader_index> shader_module_indices_;
         std::vector<vk::UniqueShaderModule> shader_modules_;

@@ -11,29 +11,29 @@ namespace irglab
 	
 	struct [[maybe_unused]] semantic_key
 	{
-		semantic_key() noexcept : inner_(inner_counter_++) {}
+		semantic_key() : inner_(inner_counter_++) {}
 
-		bool operator ==(const semantic_key& other) const noexcept
+		bool operator ==(const semantic_key& other) const
 		{
 			return inner_ == other.inner_;
 		}
 
 		// ReSharper disable once CppNonExplicitConversionOperator
-		operator size_t() const noexcept
+		operator size_t() const
 		{
 			return inner_;
 		}
 		
 		struct [[maybe_unused]] hasher
 		{
-			size_t operator()(semantic_key const& key) const noexcept
+			size_t operator()(semantic_key const& key) const
 			{
 				return key.inner_;
 			}
 		};
 
 	private:
-		inline static unsigned int inner_counter_ = 0;
+		static inline size_t inner_counter_{ 0 };
 		const size_t inner_;
 	};
 

@@ -11,10 +11,7 @@
     </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="Resource Files\Shaders">
-      <UniqueIdentifier>{bbe5a5ad-8d67-4457-9eb7-bb108c787090}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms;obj;vert;frag</Extensions>
     </Filter>
     <Filter Include="Header Files\App">
       <UniqueIdentifier>{bf460a72-146f-44d2-b04b-e887db24ebab}</UniqueIdentifier>
@@ -28,14 +25,15 @@
     <Filter Include="Header Files\Graphics">
       <UniqueIdentifier>{d9940276-49e8-4f16-bc0f-23ca7ce4de4b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\Objects">
-      <UniqueIdentifier>{e6098cb5-d700-4326-b3e5-35679e33a404}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Geometry\Bodies">
-      <UniqueIdentifier>{a2908fcc-ebe0-43fb-ada2-c76f9e18ccb2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Geometry\Simple">
       <UniqueIdentifier>{47994554-8f8b-4b41-9396-ae7cced1b8cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders">
+      <UniqueIdentifier>{95b6c761-3021-48c7-81b3-acd15c560299}</UniqueIdentifier>
+      <Extensions>vert;frag</Extensions>
+    </Filter>
+    <Filter Include="Resource Files\Bodies">
+      <UniqueIdentifier>{a2908fcc-ebe0-43fb-ada2-c76f9e18ccb2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -96,7 +94,7 @@
       <Filter>Header Files\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="tetrahedron.hpp">
-      <Filter>Header Files\Geometry\Bodies</Filter>
+      <Filter>Resource Files\Bodies</Filter>
     </ClInclude>
     <ClInclude Include="convex_body.hpp">
       <Filter>Header Files\Geometry</Filter>
@@ -151,19 +149,5 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="vk_layer_settings.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="objects\cube.obj">
-      <Filter>Resource Files\Objects</Filter>
-    </Object>
-    <Object Include="objects\reference_plane.obj">
-      <Filter>Resource Files\Objects</Filter>
-    </Object>
-    <Object Include="objects\teddy.obj">
-      <Filter>Resource Files\Objects</Filter>
-    </Object>
-    <Object Include="objects\tetrahedron.obj">
-      <Filter>Resource Files\Objects</Filter>
-    </Object>
   </ItemGroup>
 </Project>

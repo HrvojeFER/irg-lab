@@ -23,7 +23,7 @@ namespace irglab
 		{
 			point result{};
 
-			for (size i = 0; i < control_points.size(); ++i)
+			for (size i = 0 ; i < control_points.size() ; ++i)
 				result += control_points[i] * get_bernstein_polynomial_result(
 					i, control_points.size() - 1, parameter);
 
@@ -33,9 +33,10 @@ namespace irglab
 		[[nodiscard]] static number get_bernstein_polynomial_result(
 			const size index, const size control_point_count, const number parameter)
 		{
-			return number_of_combinations(control_point_count, index) * 
+			return static_cast<number>(
+				number_of_combinations(control_point_count, index) * 
 				glm::pow(parameter, index) *
-				glm::pow(1 - parameter, control_point_count - index);
+				glm::pow(1 - parameter, control_point_count - index));
 		}
 	};
 }

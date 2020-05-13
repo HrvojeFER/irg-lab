@@ -17,6 +17,7 @@ namespace irglab
 {
 	struct pipeline
 	{
+	private:
         struct compiled_shader_paths
         {
             std::string vertex;
@@ -32,6 +33,7 @@ namespace irglab
     #endif
         };
 
+	public:
 		explicit pipeline(
             const device& device,
             const swapchain& swapchain,

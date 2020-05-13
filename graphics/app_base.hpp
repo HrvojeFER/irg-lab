@@ -16,7 +16,7 @@ namespace irglab
         static constexpr std::string_view default_name = "Graphics App";
     	
         explicit app_base(const std::string_view name = default_name) :
-            window_{ std::make_shared<window>(window{environment_, name}) },
+            window_{ std::make_shared<window>(environment_, name) },
             artist_{ environment_, window_ } { }
 
         const std::string_view name;
@@ -44,6 +44,10 @@ namespace irglab
         }
 
     	
+    private:
+        environment environment_{};
+
+    	
     protected:
         virtual void pre_run() { }
 
@@ -58,10 +62,6 @@ namespace irglab
         std::shared_ptr<window> window_;
 
         artist artist_;
-
-    	
-    private:
-        environment environment_{};
     };
 }
 
