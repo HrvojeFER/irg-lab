@@ -18,38 +18,66 @@ namespace irglab
 	template<size DimensionCount>
 	struct convex_body_internal
 	{
-		using triangle = triangle<DimensionCount>;
-		std::vector<triangle> triangles;
+		using triangle = tracking_triangle<DimensionCount>;
+		using shared_triangle = std::shared_ptr<triangle>;
+		using vertex = typename triangle::vertex;
+		using tracked_vertex = typename triangle::tracked_vertex;
+
+	protected:
+		std::unordered_set<tracked_vertex> vertices_;
+		std::unordered_set<shared_triangle> triangles_;
+
+
+		constexpr explicit convex_body_internal(
+			const std::initializer_list<tracked_vertex>& vertices,
+			const std::initializer_list<shared_triangle>& triangles) noexcept :
+
+			vertices_{ vertices },
+			triangles_{ triangles } { }
 
 		
-		constexpr explicit convex_body_internal(
-			const std::initializer_list<triangle>& triangles) noexcept :
-			triangles{ triangles } { }
+		template<typename Iterator>
+		static constexpr bool is_proper_vertex_iterator = is_iterator_v<Iterator> &&
+			std::is_same_v<typename std::iterator_traits<Iterator>::value_type, tracked_vertex>;
 
 		template<typename Iterator>
-		explicit convex_body_internal(const Iterator& begin, const Iterator& end) :
-			triangles{ begin, end } { }
+		static constexpr bool is_proper_triangle_iterator = is_iterator_v<Iterator> &&
+			std::is_same_v<typename std::iterator_traits<Iterator>::value_type, shared_triangle>;
 
+		template<typename VertexIterator, typename TriangleIterator, std::enable_if_t<
+			is_proper_vertex_iterator<VertexIterator> &&
+			is_proper_triangle_iterator<TriangleIterator>,
+		int> = 0>
+		explicit convex_body_internal(
+			const VertexIterator& vertices_begin, const VertexIterator& vertices_end,
+			const TriangleIterator& triangles_begin, const TriangleIterator& triangles_end) :
 
-		constexpr void normalize()
+			vertices_{ vertices_begin, vertices_end },
+			triangles_{ triangles_begin, triangles_end } { }
+
+		
+	public:
+		[[nodiscard]] const std::unordered_set<tracked_vertex>& vertices() const
 		{
-			for (auto& triangle : triangles) triangle.normalize();
+			return vertices_;
+		}
+
+		[[nodiscard]] const std::unordered_set<shared_triangle>& triangles() const
+		{
+			return triangles_;
 		}
 		
-		constexpr void operator*=(const transformation<DimensionCount>& transformation) noexcept
-		{
-			for (auto& triangle : triangles) triangle *= transformation;
-		}
-
+		
 		friend constexpr void operator|=(
 			bounds<DimensionCount>& bounds, const convex_body_internal& body) noexcept
 		{
-			for (const auto& triangle : body.triangles) bounds |= triangle;
+			for (const auto& triangle : body.triangles_) bounds |= *triangle;
 		}
 
-		friend void operator+=(wireframe<DimensionCount>& wireframe, const convex_body_internal& body)
+		friend void operator+=(irglab::tracking_wireframe<DimensionCount>& wireframe, 
+			const convex_body_internal& body)
 		{
-			for (const auto& triangle : body.triangles) wireframe += triangle;
+			for (const auto& triangle : body.triangles_) wireframe += *triangle;
 		}
 
 		
@@ -57,12 +85,22 @@ namespace irglab
 		{
 			output_stream << "Triangles:" << std::endl;
 
-			for (const auto& triangle : body.triangles)
+			for (const auto& triangle : body.triangles_)
 			{
-				output_stream << triangle;
+				output_stream << *triangle;
 			}
 
 			return output_stream << std::endl;
+		}
+
+		constexpr void normalize() const
+		{
+			for (auto& triangle : triangles_) triangle->normalize();
+		}
+
+		constexpr void operator*=(const transformation<DimensionCount>& transformation) const noexcept
+		{
+			for (auto& triangle : triangles_) *triangle *= transformation;
 		}
 	};
 
@@ -71,33 +109,29 @@ namespace irglab
 	template<size DimensionCount>
 	struct convex_body final : convex_body_internal<DimensionCount> { convex_body() = delete; };
 
-	
-	template<>
-	struct convex_body<2> final : convex_body_internal<2>
-	{
-		constexpr explicit convex_body(
-			const std::initializer_list<two_dimensional::triangle>& triangles) noexcept :
-			convex_body_internal<2>{ triangles } { }
-
-		template<typename Iterator>
-		explicit convex_body(const Iterator& begin, const Iterator& end) :
-			convex_body_internal{ begin, end } { }
-	};
-
-
 	template<>
 	struct convex_body<3> : convex_body_internal<3>
 	{
-		using triangle = three_dimensional::triangle;
+	private:
+		using base = convex_body_internal<3>;
 
 		constexpr explicit convex_body(
-			const std::initializer_list<three_dimensional::triangle>& triangles) noexcept :
-			convex_body_internal<3>{ triangles } { }
+			const std::initializer_list<tracked_vertex>& vertices,
+			const std::initializer_list<shared_triangle>& triangles) noexcept :
 
-		template<typename Iterator>
-		explicit convex_body(Iterator begin, Iterator end) :
-			convex_body_internal<3>{ begin, end } { }
+			base{ vertices, triangles } { }
 
+		template<typename VertexIterator, typename TriangleIterator, std::enable_if_t<
+			is_proper_vertex_iterator<VertexIterator>&&
+			is_proper_triangle_iterator<TriangleIterator>,
+			int> = 0>
+		explicit convex_body(
+			const VertexIterator& vertices_begin, const VertexIterator& vertices_end,
+			const TriangleIterator& triangles_begin, const TriangleIterator& triangles_end) :
+
+			base{ vertices_begin, vertices_end, triangles_begin, triangles_end } { }
+
+	public:
 		struct parsing_report;
 		[[nodiscard]] static parsing_report parse(const std::vector<std::string>& lines);
 
@@ -167,9 +201,9 @@ namespace irglab
 		[[nodiscard]] friend bool operator<(
 			const three_dimensional::point& point, const convex_body& body)
 		{
-			for (const auto& triangle : body.triangles)
+			for (const auto& triangle : body.triangles_)
 			{
-				if (not (point < triangle))
+				if (not (point < *triangle))
 				{
 					return false;
 				}
@@ -226,8 +260,8 @@ namespace irglab
 		size comment_count = 0;
 		size error_count = 0;
 
-		std::vector<three_dimensional::triangle> triangles;
-		std::vector<three_dimensional::triangle::vertex> vertices;
+		std::vector<tracked_vertex> vertices;
+		std::vector<shared_triangle> triangles;
 
 		for (const auto& line : lines)
 		{
@@ -247,21 +281,27 @@ namespace irglab
 				float x, y, z;
 				line_stream >> x >> y >> z;
 
-				vertices.emplace_back(triangle::vertex{ x, y, z, 1.0f });
+				vertices.emplace_back(tracked_vertex{ 
+					std::make_shared<vertex>(x, y, z, 1.0f) });
 			}
 			else if (first == 'f')
 			{
-				size_t a, b, c;
-				line_stream >> a >> b >> c;
+				size_t first_index, second_index, third_index;
+				line_stream >> first_index >> second_index >> third_index;
 
-				triangles.emplace_back(
-					triangle
-					{
-						// Numbering in text starts with 1.
-						vertices[a - 1],
-						vertices[b - 1],
-						vertices[c - 1]
-					});
+				// Numbering in .obj files starts with 1.
+				const auto& first_vertex = vertices[first_index - 1];
+				const auto& second_vertex = vertices[second_index - 1];
+				const auto& third_vertex = vertices[third_index - 1];
+				
+				const auto shared_triangle = std::make_shared<triangle>(
+					first_vertex, second_vertex, third_vertex);
+				
+				first_vertex += shared_triangle;
+				second_vertex += shared_triangle;
+				third_vertex += shared_triangle;
+				
+				triangles.emplace_back(shared_triangle);
 			}
 			
 			else if (first != 'g')
@@ -272,9 +312,13 @@ namespace irglab
 
 		return parsing_report
 		{
-			convex_body(triangles.begin(), triangles.end()),
+			convex_body{
+				vertices.begin(), vertices.end(),
+				triangles.begin(), triangles.end() },
+
 			lines.size(),
 			comment_count,
+			error_count,
 			vertices.size(),
 			triangles.size()
 		};

@@ -9,7 +9,7 @@
 
 namespace irglab
 {
-	struct vertex {
+	struct graphics_vertex {
 		using position_vector = glm::vec2;
 		using color_vector = glm::vec3;
 
@@ -25,7 +25,7 @@ namespace irglab
 			{
 				{
 					0,
-					sizeof(vertex),
+					sizeof(graphics_vertex),
 					vk::VertexInputRate::eVertex
 				}
 			};
@@ -40,13 +40,13 @@ namespace irglab
 					0,
 					0,
 					vk::Format::eR32G32Sfloat,
-					offsetof(vertex, position)
+					offsetof(graphics_vertex, position)
 				},
 				{
 					1,
 					0,
 					vk::Format::eR32G32B32Sfloat,
-					offsetof(vertex, color)
+					offsetof(graphics_vertex, color)
 				}
 			};
 		}
@@ -60,7 +60,7 @@ namespace irglab
 		static constexpr size_t vertex_count = 3276;
 		static constexpr vk::DeviceSize vertex_buffer_offset = 0;
 
-		static constexpr vk::DeviceSize buffer_size = sizeof(vertex) * vertex_count;
+		static constexpr vk::DeviceSize buffer_size = sizeof(graphics_vertex) * vertex_count;
 		
 		explicit memory_manager(const device& device) :
 			device_(device),
@@ -92,7 +92,7 @@ namespace irglab
 		}
 
 		
-		void set_vertex_buffer(std::vector<vertex> vertices) const
+		void set_vertex_buffer(std::vector<graphics_vertex> vertices) const
 		{
 			auto staging_buffer{ create_buffer(vk::BufferUsageFlagBits::eTransferSrc) };
 			auto staging_buffer_memory{ allocate_buffer_memory(*staging_buffer) };

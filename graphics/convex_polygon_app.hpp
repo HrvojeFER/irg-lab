@@ -225,25 +225,25 @@ namespace irglab
 		[[nodiscard]] static std::vector<artist::wire> get_wires_for_drawing(
 			const two_dimensional::convex_polygon& convex_polygon)
 		{
-            two_dimensional::wireframe wireframe{};
+            two_dimensional::owning_wireframe wireframe{};
             wireframe += convex_polygon;
 
-            const auto points = wireframe.get_points();
-            std::vector<artist::wire> artist_wires{ wireframe.wires.size() };
+            const auto wires = wireframe.wires();
+            std::vector<artist::wire> artist_wires{ wires.size() };
             std::transform(
-                wireframe.wires.begin(), 
-                wireframe.wires.end(), 
+                wires.begin(), 
+                wires.end(), 
                 artist_wires.begin(),
-                [](const two_dimensional::wire& wire) -> artist::wire
+                [](const two_dimensional::owning_wire& wire) -> artist::wire
                 {
                     return
                     {
 	                    {
-	                        wire.begin,
+	                        wire.begin(),
 	                        {1.0f, 0.6f, 0.0f}
 	                    },
                         {
-                        	wire.end,
+                        	wire.end(),
 							{ 0.6f, 0.0f, 1.0f }
                         }
                     };

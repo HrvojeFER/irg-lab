@@ -11,6 +11,8 @@
 #include <optional>
 #include <type_traits>
 #include <utility>
+#include <any>
+#include <variant>
 
 // Streams, IO, strings
 #include <fstream>

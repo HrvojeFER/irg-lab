@@ -9,6 +9,9 @@ namespace irglab
 	using size = size_t;
 
 	using number = float;
+	inline const number number_max = FLT_MAX;
+	inline const number number_min = -FLT_MAX;
+
 	using angle = number;
 
 	template<size Size>

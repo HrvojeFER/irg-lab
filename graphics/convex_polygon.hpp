@@ -3,6 +3,7 @@
 
 
 #include "pch.hpp"
+#include "extensions.hpp"
 
 #include "primitives.hpp"
 #include "direction.hpp"
@@ -25,17 +26,14 @@ namespace irglab
 		}
 
 		friend void operator+=(
-			wireframe<DimensionCount>& wireframe, const convex_polygon_internal& convex_polygon)
+			owning_wireframe<DimensionCount>& wireframe, const convex_polygon_internal& convex_polygon)
 		{
-			auto i = convex_polygon.vertices_.begin();
-			for ( ; i + 1 != convex_polygon.vertices_.end(); ++i)
-			{
-				wireframe += wire<DimensionCount>{ *i, * (i + 1) };
-			}
+			for (auto i = convex_polygon.vertices_.begin() + 1; i != convex_polygon.vertices_.end(); ++i)
+				wireframe += owning_wire<DimensionCount>{ *(i - 1), *i };
 
-			wireframe += wire<DimensionCount>
+			wireframe += owning_wire<DimensionCount>
 			{
-				*i,
+				*(convex_polygon.vertices_.end() - 1),
 				*convex_polygon.vertices_.begin()
 			};
 		}
@@ -55,23 +53,29 @@ namespace irglab
 
 	protected:
 		template<typename Iterator>
+		static constexpr bool is_proper_vertex_iterator_v = is_iterator_v<Iterator> &&
+			std::is_same_v<typename std::iterator_traits<Iterator>::value_type, vertex> &&
+			std::is_convertible_v<typename std::iterator_traits<Iterator>::iterator_category,
+				std::input_iterator_tag>;
+		
+		template<typename Iterator, std::enable_if_t<is_proper_vertex_iterator_v<Iterator>, int> = 0>
 		convex_polygon_internal(Iterator begin, Iterator end) :
-			vertices_{ take_prefix_forming_convex_polygon<Iterator>(begin, end) } { }
+			vertices_{ convex_polygon_internal::take_prefix_forming_convex_polygon(
+				std::move(begin), std::move(end)) } { }
 
 		convex_polygon_internal(const std::initializer_list<vertex>& vertices) :
-			vertices_{ take_prefix_forming_convex_polygon
-				<typename std::initializer_list<vertex>::iterator>(
+			vertices_{ convex_polygon_internal::take_prefix_forming_convex_polygon(
 					vertices.begin(), vertices.end()) } { }
 
 		std::vector<vertex> vertices_;
 
 
 	private:
-		template<typename Iterator>
+		template<typename Iterator, std::enable_if_t<is_proper_vertex_iterator_v<Iterator>, int> = 0>
 		[[nodiscard]] static std::vector<vertex> take_prefix_forming_convex_polygon(
 			const Iterator& begin, const Iterator& end)
 		{
-			if (std::distance(begin, end) < 3)
+			if (static_cast<size_t>(std::distance(begin, end)) < 3)
 				throw std::range_error("Expected at least three points.");
 
 			std::vector<vertex> convex_polygon =
@@ -114,7 +118,6 @@ namespace irglab
 		using vertex = two_dimensional::point;
 		using edge = two_dimensional::line;
 
-
 		explicit convex_polygon(const std::initializer_list<vertex>& vertices) :
 			convex_polygon_internal{ vertices },
 			edges_{ get_successive_point_lines(vertices_.begin(), vertices_.end()) },
@@ -122,7 +125,7 @@ namespace irglab
 			left_edges_{ get_edges_from_direction(left) },
 			right_edges_{ get_edges_from_direction(right) } { }
 
-		template<typename Iterator>
+		template<typename Iterator, std::enable_if_t<is_proper_vertex_iterator_v<Iterator>, int> = 0>
 		explicit convex_polygon(Iterator begin, Iterator end) :
 			convex_polygon_internal{ begin, end },
 			edges_{ get_successive_point_lines(vertices_.begin(), vertices_.end()) },
@@ -242,13 +245,11 @@ namespace irglab
 		std::vector<edge> right_edges_;
 
 
-		template<typename Iterator>
+		template<typename Iterator, std::enable_if_t<is_proper_vertex_iterator_v<Iterator>, int> = 0>
 		[[nodiscard]] static std::vector<two_dimensional::line> get_successive_point_lines(
 			const Iterator& begin, const Iterator& end)
 		{
-			const auto iterator_distance = std::distance(begin, end);
-
-			if (iterator_distance < 0)
+			if (static_cast<int>(std::distance(begin, end)) < 0)
 				throw std::runtime_error{ "Iterator distance is less than 0." };
 
 			std::vector<two_dimensional::line> result{ };
@@ -263,20 +264,17 @@ namespace irglab
 			return result;
 		}
 
-		template<typename Iterator>
+		template<typename Iterator, std::enable_if_t<is_proper_vertex_iterator_v<Iterator>, int> = 0>
 		[[nodiscard]] static std::vector<two_dimensional::point> get_intersections(
-			const Iterator& first, const Iterator& last,
+			const Iterator& begin, const Iterator& end,
 			const two_dimensional::line& line)
 		{
-			const auto iterator_distance = std::distance<Iterator>(first, last);
-			if (iterator_distance < 0)
-			{
+			if (static_cast<int>(std::distance(begin, end)) < 0)
 				throw std::runtime_error{ "Iterator distance is less than 0." };
-			}
 
-			std::vector<two_dimensional::point> result{ static_cast<size>(iterator_distance) };
+			std::vector<two_dimensional::point> result{ static_cast<size>(std::distance(begin, end)) };
 
-			std::transform(first, last, result.begin(),
+			std::transform(begin, end, result.begin(),
 				[line](const irglab::two_dimensional::line& other)
 				{
 					return two_dimensional::get_intersection(line, other);
@@ -300,7 +298,7 @@ namespace irglab
 				if (first_vertex.y / first_vertex.z >
 					second_vertex.y / second_vertex.z == direction_ == right_or_left)
 				{
-					result.push_back(edges_[index]);
+					result.emplace_back(edges_[index]);
 				}
 			}
 

@@ -18,7 +18,7 @@ namespace irglab
 	struct animation_app final : app_base
 	{
 		explicit animation_app(
-			const std::string& path_to_body_file = "./objects/teddy.obj"
+			const std::string& path_to_body_file = "./objects/cube.obj"
 #if !defined(NDEBUG)
 			, const std::string& path_to_reference_plane_file = "./objects/reference_plane.obj"
 #endif
@@ -47,7 +47,7 @@ namespace irglab
 
 		three_dimensional::camera camera_{};
 #if !defined(NDEBUG)
-		three_dimensional::wireframe reference_frame_{};
+		three_dimensional::tracking_wireframe reference_frame_{};
 #endif
 		three_dimensional::convex_body body_;
 
@@ -246,24 +246,25 @@ namespace irglab
 				});
 		}
 
+
 		void set_scene_for_drawing()
 		{
-			three_dimensional::wireframe visible{};
+			three_dimensional::tracking_wireframe visible{};
 #if !defined(NDEBUG)
-			three_dimensional::wireframe invisible{};
+			three_dimensional::tracking_wireframe invisible{};
 #endif
 
 			const auto viewpoint_cartesian =
 				three_dimensional::to_cartesian_coordinates(camera_.viewpoint);
 
-			for (const auto& triangle : body_.triangles)
+			for (const auto& triangle : body_.triangles())
 			{
 				const auto triangle_first_cartesian =
-					three_dimensional::to_cartesian_coordinates(triangle.first);
+					three_dimensional::to_cartesian_coordinates(triangle->first());
 				const auto triangle_second_cartesian =
-					three_dimensional::to_cartesian_coordinates(triangle.second);
+					three_dimensional::to_cartesian_coordinates(triangle->second());
 				const auto triangle_third_cartesian =
-					three_dimensional::to_cartesian_coordinates(triangle.third);
+					three_dimensional::to_cartesian_coordinates(triangle->third());
 
 				if (dot(
 					three_dimensional::get_plane_normal(
@@ -274,93 +275,105 @@ namespace irglab
 					viewpoint_cartesian -
 					(triangle_first_cartesian +
 						triangle_second_cartesian +
-						triangle_third_cartesian) / 3.0f) > 0) visible += triangle;
+						triangle_third_cartesian) / 3.0f) > 0) visible += *triangle;
 
 #if !defined(NDEBUG)
-				else invisible += triangle;
+				else invisible += *triangle;
 #endif
 
 			}
 
-			visible.remove_duplicate_wires();
+			visible.prune();
 #if !defined(NDEBUG)
-			invisible.remove_duplicate_wires();
+			invisible.prune();
 #endif
 
 
 			const auto view_transformation = camera_.get_view_transformation();
-			std::vector<vertex> vertices{  };
+			std::vector<graphics_vertex> vertices{  };
 
 #if !defined(NDEBUG)
-			for (auto wire : invisible.wires)
+			for (const auto& shared_wire : invisible.wires())
 			{
+				auto wire = *shared_wire;
 				wire *= view_transformation;
 
-				if (wire.begin.z / wire.begin.w > 0 && wire.end.z / wire.end.w > 0)
+				const auto wire_begin_cartesian =
+					three_dimensional::to_cartesian_coordinates(wire.begin());
+				const auto wire_end_cartesian =
+					three_dimensional::to_cartesian_coordinates(wire.end());
+
+				if (wire_begin_cartesian.z > 0 && wire_end_cartesian.z > 0)
 				{
 					vertices.emplace_back(
-						vertex
+						graphics_vertex
 						{
-							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(wire.begin)),
+							camera_.get_projection(wire_begin_cartesian),
 							{0.0f, 0.3f, 0.2f}
 						});
 
 					vertices.emplace_back(
-						vertex
+						graphics_vertex
 						{
-							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(wire.end)),
+							camera_.get_projection(wire_end_cartesian),
 							{0.2f, 0.0f, 0.4f}
 						});
 				}
 			}
 #endif
 
-			for (auto wire : visible.wires)
+			for (const auto& shared_wire : visible.wires())
 			{
+				auto wire = *shared_wire;
 				wire *= view_transformation;
 
-				if (wire.begin.z / wire.begin.w > 0 && wire.end.z / wire.end.w > 0)
+				const auto wire_begin_cartesian =
+					three_dimensional::to_cartesian_coordinates(wire.begin());
+				const auto wire_end_cartesian =
+					three_dimensional::to_cartesian_coordinates(wire.end());
+
+				if (wire_begin_cartesian.z > 0 && wire_end_cartesian.z > 0)
 				{
 					vertices.emplace_back(
-						vertex
+						graphics_vertex
 						{
-							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(wire.begin)),
+							camera_.get_projection(wire_begin_cartesian),
 							{1.0f, 0.6f, 0.0f}
 						});
 
 					vertices.emplace_back(
-						vertex
+						graphics_vertex
 						{
-							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(wire.end)),
+							camera_.get_projection(wire_end_cartesian),
 							{0.6f, 1.0f, 0.5f}
 						});
 				}
 			}
 
 #if !defined(NDEBUG)
-			for (auto wire : reference_frame_.wires)
+			for (const auto& shared_wire : reference_frame_.wires())
 			{
+				auto wire = *shared_wire;
 				wire *= view_transformation;
-				
-				if (wire.begin.z / wire.begin.w > 0 && wire.end.z / wire.end.w > 0)
+
+				const auto wire_begin_cartesian =
+					three_dimensional::to_cartesian_coordinates(wire.begin());
+				const auto wire_end_cartesian =
+					three_dimensional::to_cartesian_coordinates(wire.end());
+
+				if (wire_begin_cartesian.z > 0 && wire_end_cartesian.z > 0)
 				{
 					vertices.emplace_back(
-						vertex
+						graphics_vertex
 						{
-							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(wire.begin)),
+							camera_.get_projection(wire_begin_cartesian),
 							{0.0f, 0.6f, 0.4f}
 						});
 
 					vertices.emplace_back(
-						vertex
+						graphics_vertex
 						{
-							camera_.get_projection(
-								three_dimensional::to_cartesian_coordinates(wire.end)),
+							camera_.get_projection(wire_end_cartesian),
 							{0.0f, 0.4f, 0.6f}
 						});
 				}

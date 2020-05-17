@@ -7,24 +7,27 @@
 #include "primitives.hpp"
 
 
+// It would be great if this was an enum of some king,
+// but I'm not sure what the semantics of it would have to be.
+
 namespace irglab
 {
 	using direction = bool;
 
-	inline const direction counterclockwise = true;
-	inline const direction clockwise = false;
+	constexpr direction counterclockwise = true;
+	constexpr direction clockwise = false;
 
-	inline const direction above = true;
-	inline const direction below = false;
+	constexpr direction above = true;
+	constexpr direction below = false;
 	
-	inline const direction right = true;
-	inline const direction left = false;
+	constexpr direction right = true;
+	constexpr direction left = false;
 
-	inline const direction bottom = true;
-	inline const direction top = false;
+	constexpr direction bottom = true;
+	constexpr direction top = false;
 
-	inline const direction direction_far = true;
-	inline const direction direction_near = false;
+	constexpr direction direction_far = true;
+	constexpr direction direction_near = false;
 }
 
 namespace irglab::two_dimensional

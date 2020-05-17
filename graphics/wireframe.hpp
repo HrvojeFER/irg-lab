@@ -13,95 +13,197 @@
 
 namespace irglab
 {
+	template<size DimensionCount, bool IsTracking>
+	struct wireframe;
+
+	
 	template<size DimensionCount>
-	struct wireframe
+	struct wireframe<DimensionCount, false>
 	{
-		using wire = wire<DimensionCount>;
-		std::vector<wire> wires;
+		using wire = irglab::owning_wire<DimensionCount>;
+		using vertex = typename wire::point;
 
-		constexpr void normalize()
+	private:
+		std::vector<wire> wires_;
+
+	public:
+		void prune()
 		{
-			for (auto& wire : wires) wire.normalize();
+			wires_.erase(remove_duplicates(wires_.begin(), wires_.end()), wires_.end());
+		}
+
+		
+		[[nodiscard]] const std::vector<wire>& wires() const
+		{
+			return wires_;
 		}
 		
-		constexpr explicit wireframe(const std::initializer_list<wire>& points) noexcept :
-			wires{ points } { }
-
-		template<typename Iterator>
-		wireframe(const Iterator first, const Iterator last) :
-			wires{ std::distance(first, last) }
+		[[nodiscard]] std::vector<vertex> vertices() const
 		{
-			for (auto i = first; i != last; ++i) wires.emplace_back(wire{ *i, *(i + 1) });
-			wires.emplace_back(wire{ *last, *first });
-		}
-		
-		void remove_duplicate_wires()
-		{
-			for (size i = 0; i < wires.size(); ++i)
-				for (auto j = i + 1; j < wires.size(); ++j)
-					if (wires[i] == wires[j])
-					{
-						wires.erase(wires.begin() + j);
-						--j;
-					}
-		}
+			std::vector<typename wire::point> points{ };
 
-		[[nodiscard]] std::vector<point<DimensionCount>> get_points() const
-		{
-			std::vector<point<DimensionCount>> points{ };
-
-			for (const auto& wire : wires)
-				points.emplace_back(wire.begin),
-				points.emplace_back(wire.end);
+			for (const auto& wire : wires_)
+				points.emplace_back(wire.begin()),
+				points.emplace_back(wire.end());
 
 			return points;
 		}
-		
-		
+
+
+		friend constexpr  void operator|=(
+			bounds<DimensionCount>& bounds, const wireframe& wireframe) noexcept
+		{
+			for (const auto& wire : wireframe.wires_) bounds |= wire;
+		}
+
+
+		friend std::ostream& operator<<(std::ostream& output_stream, const wireframe& wireframe)
+		{
+			output_stream << "Wires:" << std::endl;
+
+			for (const auto& wire : wireframe.wires_) output_stream << wire;
+
+			return output_stream;
+		}
+
+
+		constexpr void normalize()
+		{
+			for (auto& wire : wires_) wire.normalize();
+		}
+
 		constexpr void operator*=(const transformation<DimensionCount>& transformation) noexcept
 		{
-			for (auto& [start, end] : wires) start *= transformation, end *= transformation;
+			for (auto& wire : wires_) wire *= transformation;
 		}
 
 		
 		void operator+=(const wire& wire)
 		{
-			wires.emplace_back(wire);
+			wires_.emplace_back(wire);
 		}
 
 		void operator+=(const wireframe& other)
 		{
-			this->wires.insert(this->wires.end(), other.wires.begin(), other.wires.end());
+			this->wires_.insert(this->wires_.end(), other.wires_.begin(), other.wires_.end());
+		}
+	};
+
+	template<size DimensionCount>
+	using owning_wireframe = wireframe<DimensionCount, false>;
+
+	
+	template<size DimensionCount>
+	struct wireframe<DimensionCount, true>
+	{
+		using wire = tracking_wire<DimensionCount>;
+		using shared_wire = std::shared_ptr<wire>;
+		using vertex = typename wire::point;
+		using tracked_vertex = typename wire::tracked_point;
+
+	private:
+		std::unordered_set<shared_wire> wires_{};
+		std::unordered_set<tracked_vertex> vertices_{};
+		
+	public:
+		void prune() const
+		{
+			for (const auto& vertex : vertices_) vertex.prune();
+		}
+		
+		[[nodiscard]] const std::unordered_set<shared_wire>& wires() const
+		{
+			return wires_;
+		}
+
+		[[nodiscard]] const std::unordered_set<tracked_vertex>& vertices() const
+		{
+			return vertices_;
 		}
 
 		
 		friend constexpr  void operator|=(
 			bounds<DimensionCount>& bounds, const wireframe& wireframe) noexcept
 		{
-			for (const auto& wire : wireframe.wires) bounds |= wire;
+			for (const auto& vertex : wireframe.vertices_) bounds |= *vertex;
 		}
 
-		
-		friend std::ostream& operator<<(std::ostream& output_stream,
-			const wireframe<DimensionCount>& wireframe)
+
+		friend std::ostream& operator<<(std::ostream& output_stream, const wireframe& wireframe)
 		{
 			output_stream << "Wires:" << std::endl;
 
-			for (const auto& wire : wireframe.wires) output_stream << wire;
+			for (const auto& wire : wireframe.wires_) output_stream << wire;
 
 			return output_stream;
 		}
+
+
+		constexpr void normalize() const
+		{
+			for (auto& wire : wires_) wire->normalize();
+		}
+
+		constexpr void operator*=(const transformation<DimensionCount>& transformation) const noexcept
+		{
+			for (auto& vertex : vertices_) *vertex *= transformation;
+		}
+
+
+		void operator+=(const shared_wire& wire)
+		{
+			const auto wire_begin_iterator = vertices_.find(wire->begin_conditional());
+			const auto wire_end_iterator = vertices_.find(wire->end_conditional());
+
+			if (wire_begin_iterator != vertices_.end())
+			{
+				if (wire_end_iterator == vertices_.end())
+				{
+					*wire_begin_iterator += wire->begin_conditional();
+					vertices_.insert(wire->end_conditional());
+				}
+			}
+			else if (wire_end_iterator != vertices_.end())
+			{
+				*wire_end_iterator += wire->begin_conditional();
+				vertices_.insert(wire->begin_conditional());
+			}
+			else
+			{
+				vertices_.insert(wire->begin_conditional());
+				vertices_.insert(wire->end_conditional());
+			}
+			
+			wires_.insert(wire);
+		}
+
+		void operator+=(const wireframe& other)
+		{
+			this->wires_.insert(other.wires_.begin(), other.wires_.end());
+			this->vertices_.insert(other.vertices_.begin(), other.vertices_.end());
+		}
 	};
+
+	template<size DimensionCount>
+	using tracking_wireframe = wireframe<DimensionCount, true>;
 }
 
 namespace irglab::two_dimensional
 {
-	using wireframe = irglab::wireframe<dimension_count>;
+	template<bool IsTracking>
+	using wireframe = irglab::wireframe<dimension_count, IsTracking>;
+	
+	using tracking_wireframe = irglab::tracking_wireframe<dimension_count>;
+	using owning_wireframe = irglab::owning_wireframe<dimension_count>;
 }
 
 namespace irglab::three_dimensional
 {
-	using wireframe = irglab::wireframe<dimension_count>;
+	template<bool IsTracking>
+	using wireframe = irglab::wireframe<dimension_count, IsTracking>;
+
+	using tracking_wireframe = irglab::tracking_wireframe<dimension_count>;
+	using owning_wireframe = irglab::owning_wireframe<dimension_count>;
 }
 
 

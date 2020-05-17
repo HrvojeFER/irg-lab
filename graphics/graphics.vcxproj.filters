@@ -87,9 +87,6 @@
     <ClInclude Include="window.hpp">
       <Filter>Header Files\Environment</Filter>
     </ClInclude>
-    <ClInclude Include="triangle.hpp">
-      <Filter>Header Files\Geometry</Filter>
-    </ClInclude>
     <ClInclude Include="wireframe.hpp">
       <Filter>Header Files\Geometry</Filter>
     </ClInclude>
@@ -129,11 +126,14 @@
     <ClInclude Include="transformations.hpp">
       <Filter>Header Files\Geometry\Simple</Filter>
     </ClInclude>
-    <ClInclude Include="wire.hpp">
-      <Filter>Header Files\Geometry\Simple</Filter>
-    </ClInclude>
     <ClInclude Include="render_pass.hpp">
       <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="triangle.hpp">
+      <Filter>Header Files\Geometry\Simple</Filter>
+    </ClInclude>
+    <ClInclude Include="wire.hpp">
+      <Filter>Header Files\Geometry\Simple</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

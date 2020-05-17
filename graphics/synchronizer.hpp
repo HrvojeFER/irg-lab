@@ -38,20 +38,6 @@ namespace irglab
 #endif
 		}
 
-		[[nodiscard, maybe_unused]] std::vector<std::reference_wrapper<const vk::Fence>>
-			fences(const key& key) const
-		{
-			return dereference_vulkan_handles<vk::Fence>(
-				get_vector<vk::UniqueFence>(fences_, key));
-		}
-
-		[[nodiscard, maybe_unused]] std::vector<std::reference_wrapper<const vk::Semaphore>>
-			semaphores(const key& key) const
-		{
-			return dereference_vulkan_handles<vk::Semaphore>(
-				get_vector<vk::UniqueSemaphore>(semaphores_, key));
-		}
-		
 		[[nodiscard, maybe_unused]] const vk::Fence& fence(const key& key, const size_t& index) const
 		{
 			return *get<vk::UniqueFence>(fences_, key, index);
@@ -81,7 +67,7 @@ namespace irglab
 			std::function<SyncType(const device&)> create_sync_type,
 			const device& device) const
 		{
-			sync_container<SyncType> result;
+			sync_container<SyncType> result{ description.size() };
 
 			if constexpr(!UseMap)
 			{

@@ -181,11 +181,11 @@ namespace irglab
 		}
 
 		
-		using wire = std::pair<vertex, vertex>;
+		using wire = std::pair<graphics_vertex, graphics_vertex>;
 
 		void set_wires_to_draw(const std::vector<wire>& wires) const
 		{
-			std::vector<vertex> vertices{ wires.size() * 2 };
+			std::vector<graphics_vertex> vertices{ wires.size() * 2 };
 
 			for (const auto& [start, end] : wires)
 				vertices.emplace_back(start),
@@ -194,7 +194,7 @@ namespace irglab
 			set_vertices_to_draw(std::move(vertices));
 		}
 
-		void set_vertices_to_draw(std::vector<vertex> vertices) const
+		void set_vertices_to_draw(std::vector<graphics_vertex> vertices) const
 		{
 			memory_manager_.set_vertex_buffer(std::move(vertices));
 		}

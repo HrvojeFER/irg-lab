@@ -139,9 +139,9 @@ namespace irglab
             const swapchain& swapchain) const
         {
             const auto vertex_input_binding_descriptions =
-                vertex::get_binding_descriptions();
+                graphics_vertex::get_binding_descriptions();
             const auto vertex_input_attribute_descriptions =
-                vertex::get_attribute_descriptions();
+                graphics_vertex::get_attribute_descriptions();
 
             vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info
             {
