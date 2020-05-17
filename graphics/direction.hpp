@@ -36,7 +36,7 @@ namespace irglab::two_dimensional
 		const line& line,
 		const point& point)
 	{
-		if (const auto relation = dot(point, line); relation != 0) return relation < 0;
+		if (const auto relation = dot(line, point); relation != 0) return relation < 0;
 
 		throw std::invalid_argument("Point is on the line.");
 	}
@@ -60,7 +60,7 @@ namespace irglab::three_dimensional
 {
 	[[nodiscard]] inline direction get_direction(const plane& plane, const point& point) 
 	{
-		if (const auto relation = dot(point, plane); relation != 0) return relation < 0;
+		if (const auto relation = dot(plane, point); relation != 0) return relation < 0;
 
 		throw std::invalid_argument("Point is on the plane.");
 	}

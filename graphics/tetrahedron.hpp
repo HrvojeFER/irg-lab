@@ -4,7 +4,7 @@
 
 #include "pch.hpp"
 
-#include "convex_body.hpp"
+#include "body.hpp"
 
 
 namespace irglab::three_dimensional

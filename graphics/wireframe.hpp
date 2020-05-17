@@ -152,26 +152,26 @@ namespace irglab
 
 		void operator+=(const shared_wire& wire)
 		{
-			const auto wire_begin_iterator = vertices_.find(wire->begin_conditional());
-			const auto wire_end_iterator = vertices_.find(wire->end_conditional());
+			const auto wire_begin_iterator = vertices_.find(wire->begin_tracked());
+			const auto wire_end_iterator = vertices_.find(wire->end_tracked());
 
 			if (wire_begin_iterator != vertices_.end())
 			{
 				if (wire_end_iterator == vertices_.end())
 				{
-					*wire_begin_iterator += wire->begin_conditional();
-					vertices_.insert(wire->end_conditional());
+					*wire_begin_iterator += wire->begin_tracked();
+					vertices_.insert(wire->end_tracked());
 				}
 			}
 			else if (wire_end_iterator != vertices_.end())
 			{
-				*wire_end_iterator += wire->begin_conditional();
-				vertices_.insert(wire->begin_conditional());
+				*wire_end_iterator += wire->begin_tracked();
+				vertices_.insert(wire->end_tracked());
 			}
 			else
 			{
-				vertices_.insert(wire->begin_conditional());
-				vertices_.insert(wire->end_conditional());
+				vertices_.insert(wire->begin_tracked());
+				vertices_.insert(wire->end_tracked());
 			}
 			
 			wires_.insert(wire);

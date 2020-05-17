@@ -136,18 +136,12 @@ namespace irglab
 	// Check Iterator type
 
 	template<typename T, typename = void>
-	struct [[maybe_unused]] is_iterator
-	{
-		static constexpr bool value = false;
-	};
+	struct [[maybe_unused]] is_iterator : std::false_type{};
 
 	template<typename T>
 	struct [[maybe_unused]] is_iterator<T, std::enable_if_t<
 		!std::is_same_v<typename std::iterator_traits<T>::value_type, void>,
-		void>>
-	{
-		static constexpr bool value = true;
-	};
+		void>> : std::true_type{};
 
 	template<typename T>
 	[[maybe_unused]] constexpr bool is_iterator_v = is_iterator<T>::value;
@@ -206,17 +200,17 @@ namespace irglab
 			trackers_{ std::make_shared<std::vector<std::weak_ptr<TrackerType>>>(0) } { }
 
 		
-		[[nodiscard]] InnerType& operator*() const
+		[[nodiscard]] InnerType& operator*() const noexcept
 		{
 			return *inner_;
 		}
 
-		[[nodiscard]] InnerType* operator->() const
+		[[nodiscard]] InnerType* operator->() const noexcept
 		{
 			return &*inner_;
 		}
 
-		[[nodiscard]] std::shared_ptr<InnerType> shared_inner() const
+		[[nodiscard]] std::shared_ptr<InnerType> shared_inner() const noexcept
 		{
 			return inner_;
 		}
@@ -250,7 +244,7 @@ namespace irglab
 
 		void operator+=(const tracked_pointer& other) const
 		{
-			if (*this == other and not (this->trackers_ == other.trackers_))
+			if (*this == other && !(this->trackers_ == other.trackers_))
 			{
 				other.trackers_->erase(std::remove_if(other.trackers_->begin(), other.trackers_->end(),
 					[this](const std::weak_ptr<TrackerType>& tracker) -> bool

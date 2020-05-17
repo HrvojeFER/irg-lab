@@ -36,17 +36,18 @@ namespace irglab
 
 	
 	template<size DimensionCount>
+	// ReSharper disable once CppFunctionIsNotImplemented
 	[[nodiscard]] constexpr homogeneous_coordinates<DimensionCount> to_homogeneous_coordinates(
-		const cartesian_coordinates<DimensionCount>& cartesian_coordinates) noexcept { return {}; }
+		const cartesian_coordinates<DimensionCount>& cartesian_coordinates) noexcept;
 
 	template<size DimensionCount>
+	// ReSharper disable once CppFunctionIsNotImplemented
 	[[nodiscard]] constexpr cartesian_coordinates<DimensionCount> to_cartesian_coordinates(
-		const homogeneous_coordinates<DimensionCount>& homogeneous_coordinates) { return {}; }
+		const homogeneous_coordinates<DimensionCount>& homogeneous_coordinates);
 
 	template<size DimensionCount>
-	constexpr void normalize(homogeneous_coordinates<DimensionCount>& homogeneous_coordinates)
-	{
-	}
+	// ReSharper disable once CppFunctionIsNotImplemented
+	constexpr void normalize(homogeneous_coordinates<DimensionCount>& homogeneous_coordinates);
 
 	
 	template<>

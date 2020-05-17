@@ -12,44 +12,60 @@
 
 namespace irglab
 {
-	template<size DimensionCount, bool IsTracking, typename InheritorType>
-	struct wire_internal
+	template<
+	size DimensionCount, bool IsTracking, std::enable_if_t<
+		DimensionCount == 2 || DimensionCount == 3,
+	int> = 0>
+	struct wire
 	{
 		using point = point<DimensionCount>;
-		using tracked_point = tracked_pointer<point, InheritorType>;
-		using conditional_point = std::conditional_t<IsTracking, tracked_point, point>;
+		using tracked_point = tracked_pointer<point, wire<DimensionCount, IsTracking>>;
 
-	protected:
+	private:
+		using conditional_point = std::conditional_t<IsTracking, tracked_point, point>;
 		conditional_point begin_, end_;
 
-		explicit wire_internal(conditional_point begin, conditional_point end) noexcept :
-			begin_{ std::move(begin) }, end_{ std::move(end) } { }
 
 
-		[[nodiscard]] point& begin_mutable()
-		{
-			if constexpr (std::is_same_v<conditional_point, point>) return begin_;
-			else return *begin_;
-		}
-
-		[[nodiscard]] point& end_mutable()
-		{
-			if constexpr (std::is_same_v<conditional_point, point>) return end_;
-			else return *end_;
-		}
-
-	public:
-		[[nodiscard]] const conditional_point& begin_conditional() const
+		// Mutable accessors
+		
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && !IsTracking,
+			int> = 0>
+			[[nodiscard]] point& begin_mutable()
 		{
 			return begin_;
 		}
 
-		[[nodiscard]] const conditional_point& end_conditional() const
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && !IsTracking,
+			int> = 0>
+			[[nodiscard]] point& end_mutable()
 		{
 			return end_;
 		}
 
 
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
+		[[nodiscard]] point& begin_mutable() const
+		{
+			return *begin_;
+		}
+
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
+		[[nodiscard]] point& end_mutable() const
+		{
+			return *end_;
+		}
+
+		
+	public:
+		// Immutable accessors
+		
 		[[nodiscard]] const point& begin() const
 		{
 			if constexpr (std::is_same_v<conditional_point, point>) return begin_;
@@ -63,30 +79,53 @@ namespace irglab
 		}
 
 
-		[[nodiscard]] constexpr bool operator==(const wire_internal& other) const
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& IsTracking,
+			int> = 0>
+		[[nodiscard]] const tracked_point& begin_tracked() const
+		{
+			return begin_;
+		}
+
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& IsTracking,
+			int> = 0>
+		[[nodiscard]] const tracked_point& end_tracked() const
+		{
+			return end_;
+		}
+
+
+		
+		explicit wire(conditional_point begin, conditional_point end) noexcept :
+			begin_{ std::move(begin) }, end_{ std::move(end) } { }
+
+
+		
+		[[nodiscard]] constexpr bool operator==(const wire& other) const
 		{
 			return
-				(this->begin_conditional() == other.begin_conditional() &&
-					this->end_conditional() == other.end_conditional()) ||
-				(this->begin_conditional() == other.end_conditional() &&
-					this->end_conditional() == other.begin_conditional());
+				(this->begin_ == other.begin_ &&
+					this->end_ == other.end_) ||
+				(this->begin_ == other.end_ &&
+					this->end_ == other.begin_);
 		}
 
 		
 		friend bounds<DimensionCount>& operator|(
-			const bounds<DimensionCount>& old_bounds, const wire_internal& wire)
+			const bounds<DimensionCount>& old_bounds, const wire& wire)
 		{
 			return old_bounds | wire.begin() | wire.end();
 		}
 		
 		friend constexpr void operator|=(
-			bounds<DimensionCount>& bounds, const wire_internal& wire)
+			bounds<DimensionCount>& bounds, const wire& wire)
 		{
 			bounds |= wire.begin(), bounds |= wire.end();
 		}
 
 
-		friend std::ostream& operator<<(std::ostream& output_stream, const wire_internal& wire)
+		friend std::ostream& operator<<(std::ostream& output_stream, const wire& wire)
 		{
 			return output_stream <<
 				glm::to_string(wire.begin()) << ", " <<
@@ -103,80 +142,43 @@ namespace irglab
 		}
 
 		
-		wire_internal operator*(const transformation<DimensionCount>& transformation) const noexcept
+		wire operator*(const transformation<DimensionCount>& transformation) const noexcept
 		{
-			wire_internal new_wire{ *this };
+			wire new_wire{ *this };
 
 			new_wire.begin_mutable() = this->begin() * transformation;
 			new_wire.end_mutable() = this->end() * transformation;
 
 			return new_wire;
 		}
-	};
-
-
-	template<size DimensionCount, typename InheritorType>
-	using tracking_wire_internal = wire_internal<DimensionCount, true, InheritorType>;
-
-	template<size DimensionCount, typename InheritorType>
-	using owning_wire_internal = wire_internal<DimensionCount, false, InheritorType>;
-
-
-
-	template<size DimensionCount, bool IsTracking>
-	struct wire : wire_internal<DimensionCount, IsTracking, wire<DimensionCount, IsTracking>>
-	{
-		wire() = delete;
-	};
-
-	
-	template<size DimensionCount>
-	struct wire<DimensionCount, false> final :
-		wire_internal<DimensionCount, false, wire<DimensionCount, false>>
-	{
-	private:
-		using base = wire_internal <DimensionCount, false, wire<DimensionCount, false>>;
-
-	public:
-		explicit wire(
-			const typename base::point& begin, 
-			const typename base::point& end) noexcept :
-
-			base{ begin, end } { }
 
 		
+		// If not IsTracking
+
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && !IsTracking,
+			int> = 0>
 		constexpr void normalize()
 		{
 			irglab::normalize<DimensionCount>(this->begin_mutable()),
 			irglab::normalize<DimensionCount>(this->end_mutable());
 		}
 
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && !IsTracking,
+			int> = 0>
 		constexpr void operator*=(const transformation<DimensionCount>& transformation) noexcept
 		{
 			this->begin_mutable() = this->begin() * transformation;
 			this->end_mutable() = this->end() * transformation;
 		}
-	};
 
-	template<size DimensionCount>
-	using owning_wire = wire<DimensionCount, false>;
 
-	
-	template<size DimensionCount>
-	struct wire<DimensionCount, true> final :
-		wire_internal<DimensionCount, true, wire<DimensionCount, true>>
-	{
-	private:
-		using base = wire_internal<DimensionCount, true, wire<DimensionCount, true>>;
+		// If IsTracking
 
-	public:
-		explicit wire(
-			const typename base::tracked_point& begin, 
-			const typename base::tracked_point& end) noexcept :
-
-			base{ begin, end } { }
-
-		
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
 		[[nodiscard]] wire<DimensionCount, false> detach() const
 		{
 			return wire<DimensionCount, false>
@@ -186,39 +188,54 @@ namespace irglab
 			};
 		}
 
-		
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
 		constexpr void normalize() const
 		{
-			irglab::normalize<DimensionCount>(*this->begin_conditional()),
-			irglab::normalize<DimensionCount>(*this->end_conditional());
+			irglab::normalize<DimensionCount>(this->begin_mutable()),
+			irglab::normalize<DimensionCount>(this->end_mutable());
 		}
 
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
 		constexpr void operator*=(const transformation<DimensionCount>& transformation) const noexcept
 		{
-			*this->begin_conditional() = this->begin() * transformation;
-			*this->end_conditional() = this->end() * transformation;
+			this->begin_mutable() = this->begin() * transformation;
+			this->end_mutable() = this->end() * transformation;
 		}
 	};
 
-	template<size DimensionCount>
+
+	template<
+	size DimensionCount, std::enable_if_t<
+		DimensionCount == 2 || DimensionCount == 3,
+	int> = 0>
 	using tracking_wire = wire<DimensionCount, true>;
+
+	template<size DimensionCount, std::enable_if_t<
+		DimensionCount == 2 || DimensionCount == 3,
+	int> = 0>
+	using owning_wire = wire<DimensionCount, false>;
 }
+
 
 template<irglab::size DimensionCount>
 struct std::hash<irglab::tracking_wire<DimensionCount>>
 {
 private:
-	using key = irglab::wire<DimensionCount, true>;
+	using key_t = irglab::tracking_wire<DimensionCount>;
 	
-	using tracked_vertex = typename key::tracked_point;
+	using tracked_vertex = typename key_t::tracked_point;
 	static inline const std::hash<tracked_vertex> tracked_vertex_hasher{};
 
 public:
-	size_t operator()(const key& key) const noexcept
+	size_t operator()(const key_t& key) const noexcept
 	{
 		return
-			tracked_vertex_hasher(key.begin_conditional()) ^
-			tracked_vertex_hasher(key.end_conditional());
+			tracked_vertex_hasher(key.begin_tracked()) ^
+			tracked_vertex_hasher(key.end_tracked());
 	}
 };
 

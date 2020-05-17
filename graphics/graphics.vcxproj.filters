@@ -72,9 +72,6 @@
     <ClInclude Include="app_base.hpp">
       <Filter>Header Files\App</Filter>
     </ClInclude>
-    <ClInclude Include="body_app.hpp">
-      <Filter>Header Files\App</Filter>
-    </ClInclude>
     <ClInclude Include="assets.hpp">
       <Filter>Header Files\Environment</Filter>
     </ClInclude>
@@ -92,9 +89,6 @@
     </ClInclude>
     <ClInclude Include="tetrahedron.hpp">
       <Filter>Resource Files\Bodies</Filter>
-    </ClInclude>
-    <ClInclude Include="convex_body.hpp">
-      <Filter>Header Files\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="camera.hpp">
       <Filter>Header Files\Geometry</Filter>
@@ -134,6 +128,9 @@
     </ClInclude>
     <ClInclude Include="wire.hpp">
       <Filter>Header Files\Geometry\Simple</Filter>
+    </ClInclude>
+    <ClInclude Include="body.hpp">
+      <Filter>Header Files\Geometry</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

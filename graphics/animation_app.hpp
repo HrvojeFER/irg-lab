@@ -9,7 +9,7 @@
 
 #include "curve.hpp"
 #include "wireframe.hpp"
-#include "convex_body.hpp"
+#include "body.hpp"
 #include "camera.hpp"
 
 
@@ -24,13 +24,17 @@ namespace irglab
 #endif
 		) :
 			app_base{ "Body" },
-			body_{ three_dimensional::convex_body::parse(
-				read_object_file(path_to_body_file)).body }
+			body_{ three_dimensional::convex_tracking_body::parse(
+				read_object_file(path_to_body_file)) }
 		{
+			std::cout << body_;
+			
 			body_ &= vulkan_friendly_limit;
+			std::cout << body_;
+			
 #if !defined(NDEBUG)
-			reference_frame_ += three_dimensional::convex_body::parse(
-				read_object_file(path_to_reference_plane_file)).body;
+			reference_frame_ += three_dimensional::convex_tracking_body::parse(
+				read_object_file(path_to_reference_plane_file));
 #endif
 		}
 
@@ -49,7 +53,7 @@ namespace irglab
 #if !defined(NDEBUG)
 		three_dimensional::tracking_wireframe reference_frame_{};
 #endif
-		three_dimensional::convex_body body_;
+		three_dimensional::convex_tracking_body body_;
 
 
 		three_dimensional::curve curve_
@@ -295,7 +299,7 @@ namespace irglab
 #if !defined(NDEBUG)
 			for (const auto& shared_wire : invisible.wires())
 			{
-				auto wire = *shared_wire;
+				auto wire = shared_wire->detach();
 				wire *= view_transformation;
 
 				const auto wire_begin_cartesian =
@@ -324,7 +328,7 @@ namespace irglab
 
 			for (const auto& shared_wire : visible.wires())
 			{
-				auto wire = *shared_wire;
+				auto wire = shared_wire->detach();
 				wire *= view_transformation;
 
 				const auto wire_begin_cartesian =
@@ -353,7 +357,7 @@ namespace irglab
 #if !defined(NDEBUG)
 			for (const auto& shared_wire : reference_frame_.wires())
 			{
-				auto wire = *shared_wire;
+				auto wire = shared_wire->detach();
 				wire *= view_transformation;
 
 				const auto wire_begin_cartesian =

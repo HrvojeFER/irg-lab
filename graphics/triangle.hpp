@@ -16,52 +16,86 @@
 
 namespace irglab
 {
-	template<size DimensionCount, bool IsTracking, typename InheritorType>
-	struct triangle_root
+	template<
+	size DimensionCount, bool IsTracking = false, std::enable_if_t<
+		DimensionCount == 2 || DimensionCount == 3,
+	int> = 0>
+	struct triangle
 	{
 		using vertex = point<DimensionCount>;
-		using tracked_vertex = tracked_pointer<vertex, InheritorType>;
-		using conditional_vertex = std::conditional_t<IsTracking, tracked_vertex, vertex>;
+		using tracked_vertex = tracked_pointer<vertex, triangle>;
 
-	protected:
+	private:
+		using conditional_vertex = std::conditional_t<IsTracking, tracked_vertex, vertex>;
 		conditional_vertex first_, second_, third_;
 
-		explicit triangle_root(
+	public:
+		explicit triangle(
 			conditional_vertex first,
 			conditional_vertex second,
 			conditional_vertex third) noexcept :
 
 			first_{ std::move(first) }, second_{ std::move(second) }, third_{ std::move(third) } { }
 
+		
 
-		// Usually the condition would be IsTracking, but Visual Studio is giving me a
-		// headache when I do it that way.
+	private:
+		// Mutable accessors
 
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && !IsTracking,
+			int> = 0>
 		[[nodiscard]] vertex& first_mutable()
 		{
-			if constexpr (std::is_same_v<conditional_vertex, vertex>) return first_;
-			else return *first_;
+			return first_;
 		}
 
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && !IsTracking,
+			int> = 0>
 		[[nodiscard]] vertex& second_mutable()
 		{
-			if constexpr (std::is_same_v<conditional_vertex, vertex>) return second_;
-			else return *second_;
+			return second_;
 		}
 
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && !IsTracking,
+			int> = 0>
 		[[nodiscard]] vertex& third_mutable()
 		{
-			if constexpr (std::is_same_v<conditional_vertex, vertex>) return third_;
-			else return *third_;
+			return third_;
+		}
+
+		
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
+			[[nodiscard]] vertex& first_mutable() const
+		{
+			return *first_;
+		}
+
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
+			[[nodiscard]] vertex& second_mutable() const
+		{
+			return *second_;
+		}
+
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
+			[[nodiscard]] vertex& third_mutable() const
+		{
+			return *third_;
 		}
 
 
+		
 	public:
-		[[nodiscard]] const conditional_vertex& first_conditional() const { return first_; }
-		[[nodiscard]] const conditional_vertex& second_conditional() const { return second_; }
-		[[nodiscard]] const conditional_vertex& third_conditional() const { return third_; }
-
-
+		// Immutable accessors
+		
 		[[nodiscard]] const vertex& first() const
 		{
 			if constexpr (std::is_same_v<conditional_vertex, vertex>) return first_;
@@ -80,13 +114,39 @@ namespace irglab
 			else return *third_;
 		}
 
+		
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
+		[[nodiscard]] const tracked_vertex& first_tracked() const
+		{
+			return first_;
+		}
 
-		constexpr bool operator==(triangle_root& other) const
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
+			[[nodiscard]] const tracked_vertex& second_tracked() const
+		{
+			return first_;
+		}
+
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && IsTracking,
+			int> = 0>
+			[[nodiscard]] const tracked_vertex& third_tracked() const
+		{
+			return first_;
+		}
+
+
+		
+		constexpr bool operator==(triangle& other) const
 		{
 			return
-				first_conditional() == other.first_conditional() &&
-				second_conditional() == other.second_conditional() &&
-				third_conditional() == other.third_conditional();
+				first_ == other.first_ &&
+				second_ == other.second_ &&
+				third_ == other.third_;
 		}
 
 
@@ -104,19 +164,19 @@ namespace irglab
 
 
 		friend bounds<DimensionCount> operator|(
-			bounds<DimensionCount>& bounds, const triangle_root& triangle)
+			bounds<DimensionCount>& bounds, const triangle& triangle)
 		{
 			return bounds | triangle.first() | triangle.second() | triangle.third();
 		}
 
 		friend constexpr void operator|=(
-			bounds<DimensionCount>& bounds, const triangle_root& triangle)
+			bounds<DimensionCount>& bounds, const triangle& triangle)
 		{
 			bounds |= triangle.first(), bounds |= triangle.second(), bounds |= triangle.third();
 		}
 
 		
-		friend std::ostream& operator<<(std::ostream& output_stream, const triangle_root& triangle)
+		friend std::ostream& operator<<(std::ostream& output_stream, const triangle& triangle)
 		{
 			return output_stream <<
 				"Vertices:" << std::endl <<
@@ -127,19 +187,16 @@ namespace irglab
 		}
 
 
-		// Not using std::swap because it is not constexpr and noexcept.
-		constexpr void operator~() noexcept
+		void operator~()
 		{
-			const auto temp = first_;
-			first_ = third_;
-			third_ = temp;
+			std::swap(first_, third_);
 		}
 
 
-		triangle_root operator*(
+		triangle operator*(
 			const transformation<DimensionCount>& transformation) const noexcept
 		{
-			triangle_root new_triangle{ *this };
+			triangle new_triangle{ *this };
 
 			new_triangle.first_mutable() = this->first() * transformation;
 			new_triangle.second_mutable() = this->second() * transformation;
@@ -149,9 +206,11 @@ namespace irglab
 		}
 
 		
+		// It would be great if this madness was shorter.
+		
 		friend void operator+=(
-			owning_wireframe<DimensionCount>& wireframe,
-			const triangle_root& triangle)
+			wireframe<DimensionCount, IsTracking>& wireframe,
+			const triangle& triangle)
 		{
 			if constexpr (IsTracking)
 			{
@@ -182,10 +241,12 @@ namespace irglab
 			}
 		}
 
+
+		
 		// If not IsTracking
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> and not IsTracking,
+			std::is_same_v<Dummy, void> && !IsTracking,
 			int> = 0>
 		constexpr void normalize()
 		{
@@ -195,7 +256,7 @@ namespace irglab
 		}
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> and not IsTracking,
+			std::is_same_v<Dummy, void> && !IsTracking,
 			int> = 0>
 		constexpr void operator*=(const transformation<DimensionCount>& transformation) noexcept
 		{
@@ -206,32 +267,46 @@ namespace irglab
 
 		
 		// If IsTracking
+
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& IsTracking,
+			int> = 0>
+		[[nodiscard]] triangle<DimensionCount, false> get_detached() const
+		{
+			return triangle<DimensionCount, false>
+			{
+				this->first(),
+				this->second(),
+				this->third()
+			};
+		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> and IsTracking,
+			std::is_same_v<Dummy, void> && IsTracking,
 			int> = 0>
 		void normalize() const
 		{
-			irglab::normalize<DimensionCount>(*this->first_conditional());
-			irglab::normalize<DimensionCount>(*this->second_conditional());
-			irglab::normalize<DimensionCount>(*this->third_conditional());
+			irglab::normalize<DimensionCount>(this->first_mutable());
+			irglab::normalize<DimensionCount>(this->second_mutable());
+			irglab::normalize<DimensionCount>(this->third_mutable());
 		}
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> and IsTracking,
+			std::is_same_v<Dummy, void> && IsTracking,
 			int> = 0>
 		void operator*=(const transformation<DimensionCount>& transformation) const
 		{
-			*this->first_conditional() = this->first() * transformation;
-			*this->second_conditional() = this->second() * transformation;
-			*this->third_conditional() = this->third() * transformation;
+			this->first_mutable() = this->first() * transformation;
+			this->second_mutable() = this->second() * transformation;
+			this->third_mutable() = this->third() * transformation;
 		}
+
 
 		
 		// Two dimensional
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> and DimensionCount == 2,
+			std::is_same_v<Dummy, void> && DimensionCount == 2,
 			int> = 0>
 		[[nodiscard]] direction get_direction() const
 		{
@@ -240,7 +315,7 @@ namespace irglab
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void>and DimensionCount == 2,
+			std::is_same_v<Dummy, void> && DimensionCount == 2,
 			int> = 0>
 		void operator%=(const direction direction)
 		{
@@ -248,10 +323,10 @@ namespace irglab
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void>and DimensionCount == 2,
+			std::is_same_v<Dummy, void> && DimensionCount == 2,
 			int> = 0>
 		[[nodiscard]] friend bool operator<(
-			const two_dimensional::point& point, const triangle_root& triangle)
+			const two_dimensional::point& point, const triangle& triangle)
 		{
 			const auto triangle_direction = triangle.get_direction();
 
@@ -273,7 +348,7 @@ namespace irglab
 		// Three dimensional
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void>and DimensionCount == 3,
+			std::is_same_v<Dummy, void> && DimensionCount == 3,
 			int> = 0>
 		[[nodiscard]] three_dimensional::plane get_plane() const
 		{
@@ -284,7 +359,7 @@ namespace irglab
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void>and DimensionCount == 3,
+			std::is_same_v<Dummy, void> && DimensionCount == 3,
 			int> = 0>
 		[[nodiscard]] three_dimensional::plane_normal get_plane_normal() const
 		{
@@ -295,7 +370,7 @@ namespace irglab
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void>and DimensionCount == 3,
+			std::is_same_v<Dummy, void> && DimensionCount == 3,
 			int> = 0>
 		[[nodiscard]] three_dimensional::cartesian_coordinates get_center() const
 		{
@@ -305,152 +380,31 @@ namespace irglab
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void>and DimensionCount == 3,
+			std::is_same_v<Dummy, void> && DimensionCount == 3,
 			int> = 0>
 		[[nodiscard]] friend bool operator<(
-			const three_dimensional::point& point, const triangle_root& triangle)
+			const three_dimensional::point& point, const triangle& triangle)
 		{
-			return three_dimensional::get_direction(point, triangle.get_plane());
+			return three_dimensional::get_direction(triangle.get_plane(), point);
 		}
 	};
 
-
-	template<size DimensionCount, typename InheritorType>
-	using tracking_triangle_root = triangle_root<DimensionCount, true, InheritorType>;
-
-	template<size DimensionCount, typename InheritorType>
-	using owning_triangle_root = triangle_root<DimensionCount, false, InheritorType>;
-
-
-
-	template<size DimensionCount, bool IsTracking, typename InheritorType>
-	struct triangle_internal : triangle_root<DimensionCount, IsTracking, InheritorType>
-	{
-		triangle_internal() = delete;
-	};
-
+	template<size DimensionCount, std::enable_if_t<
+		DimensionCount == 2 || DimensionCount == 3,
+	int> = 0>
+	using owning_triangle = triangle<DimensionCount, false>;
 	
-	template<size DimensionCount, typename InheritorType>
-	struct triangle_internal<DimensionCount, false, InheritorType> :
-		triangle_root<DimensionCount, false, InheritorType>
-	{
-	private:
-		using base = triangle_root<DimensionCount, false, InheritorType>;
-		
-	protected:
-		explicit triangle_internal(
-			typename base::vertex first,
-			typename base::vertex second,
-			typename base::vertex third) noexcept :
-
-			base{ std::move(first), std::move(second), std::move(third) } { }
-
-	public:
-		friend void operator+=(
-			owning_wireframe<DimensionCount>& wireframe,
-			const triangle_internal& triangle)
-		{
-			using wire = typename owning_wireframe<DimensionCount>::wire;
-			wireframe += wire{ triangle.first(), triangle.second() };
-			wireframe += wire{ triangle.second(), triangle.third() };
-			wireframe += wire{ triangle.third(), triangle.first() };
-		}
-
-		
-		constexpr void normalize()
-		{
-			irglab::normalize<DimensionCount>(this->first_mutable());
-			irglab::normalize<DimensionCount>(this->second_mutable());
-			irglab::normalize<DimensionCount>(this->third_mutable());
-		}
-
-		
-		constexpr void operator*=(const transformation<DimensionCount>& transformation) noexcept
-		{
-			this->first_mutable() = this->first() * transformation;
-			this->second_mutable() = this->second() * transformation;
-			this->third_mutable() = this->third() * transformation;
-		}
-	};
-
-	template<size DimensionCount, typename InheritorType>
-	using owning_triangle_internal = triangle_internal<DimensionCount, false, InheritorType>;
-
-
-	template<size DimensionCount, typename InheritorType>
-	struct triangle_internal<DimensionCount, true, InheritorType> :
-		triangle_root<DimensionCount, true, InheritorType>
-	{
-	private:
-		using base = triangle_root<DimensionCount, true, InheritorType>;
-
-	protected:
-		explicit triangle_internal(
-			typename base::tracked_vertex first,
-			typename base::tracked_vertex second,
-			typename base::tracked_vertex third) noexcept :
-
-			base{ std::move(first), std::move(second), std::move(third) } { }
-
-	public:
-		[[nodiscard]] InheritorType<DimensionCount, false> detach() const
-		{
-			return InheritorType<DimensionCount, false>
-			{
-				this->first(),
-				this->second(),
-				this->third()
-			};
-		}
-
-		
-		friend void operator+=(
-			tracking_wireframe<DimensionCount>& wireframe, const triangle_internal& triangle)
-		{
-			using wireframe_t = tracking_wireframe<DimensionCount>;
-			using wireframe_tracked_vertex = typename wireframe_t::tracked_vertex;
-			using wireframe_wire = typename wireframe_t::wire;
-			
-			wireframe_tracked_vertex first_vertex { triangle.first_.shared_inner() };
-			wireframe_tracked_vertex second_vertex { triangle.second_.shared_inner() };
-			wireframe_tracked_vertex third_vertex { triangle.third_.shared_inner() };
-
-			const auto first_wire = std::make_shared<wireframe_wire>(first_vertex, second_vertex);
-			const auto second_wire = std::make_shared<wireframe_wire>(second_vertex, third_vertex);
-			const auto third_wire = std::make_shared<wireframe_wire>(third_vertex, first_vertex);
-
-			first_vertex += first_wire, first_vertex += second_wire;
-			second_vertex += second_wire, second_vertex += third_wire;
-			third_vertex += third_wire, third_vertex += first_wire;
-
-			wireframe += first_wire, wireframe += second_wire, wireframe += third_wire;
-		}
-
-		
-		void normalize() const
-		{
-			irglab::normalize<DimensionCount>(*this->first_conditional());
-			irglab::normalize<DimensionCount>(*this->second_conditional());
-			irglab::normalize<DimensionCount>(*this->third_conditional());
-		}
-
-		void operator*=(const transformation<DimensionCount>& transformation) const
-		{
-			*this->first_conditional() = this->first() * transformation;
-			*this->second_conditional() = this->second() * transformation;
-			*this->third_conditional() = this->third() * transformation;
-		}
-	};
-
-	template<size DimensionCount, typename InheritorType>
-	using tracking_triangle_internal = triangle_internal<DimensionCount, true, InheritorType>;
+	template<size DimensionCount, std::enable_if_t<
+		DimensionCount == 2 || DimensionCount == 3,
+	int> = 0>
+	using tracking_triangle = triangle<DimensionCount, true>;
 }
 
-template<irglab::size DimensionCount, typename InheritorType>
-struct std::hash<irglab::tracking_triangle_internal<DimensionCount, InheritorType>>
+template<irglab::size DimensionCount>
+struct std::hash<irglab::tracking_triangle<DimensionCount>>
 {
 private:
-	using key = irglab::triangle_internal<DimensionCount, true, InheritorType>;
+	using key = irglab::tracking_triangle<DimensionCount>;
 
 	using tracked_vertex = typename key::tracked_vertex;
 	static inline const std::hash<tracked_vertex> tracked_vertex_hasher{};
@@ -459,121 +413,11 @@ public:
 	size_t operator()(const key& key) const noexcept
 	{
 		return
-			tracked_vertex_hasher(key.first_conditional()) ^ 
-			tracked_vertex_hasher(key.second_conditional()) ^
-			tracked_vertex_hasher(key.third_conditional());
+			tracked_vertex_hasher(key.first_tracked()) ^ 
+			tracked_vertex_hasher(key.second_tracked()) ^
+			tracked_vertex_hasher(key.third_tracked());
 	}
 };
-
-
-namespace irglab
-{
-	template<size DimensionCount, bool IsTracking>
-	struct triangle :
-		triangle_internal<DimensionCount, IsTracking, triangle<DimensionCount, IsTracking>>
-	{
-		triangle() = delete;
-	};
-
-	template<size DimensionCount>
-	using tracking_triangle = triangle<DimensionCount, true>;
-
-	template<size DimensionCount>
-	using owning_triangle = triangle<DimensionCount, false>;
-
-	
-	template<bool IsTracking>
-	struct triangle<2, IsTracking> final : triangle_internal<2, IsTracking, triangle<2, IsTracking>>
-	{
-	private:
-		using base = triangle_internal<2, IsTracking, triangle<2, IsTracking>>;
-
-	public:
-		explicit triangle(
-			typename base::conditional_vertex first,
-			typename base::conditional_vertex second,
-			typename base::conditional_vertex third) noexcept :
-
-			base{ std::move(first), std::move(second), std::move(third) } { }
-
-
-		[[nodiscard]] direction get_direction() const
-		{
-			return two_dimensional::get_direction(
-				this->first(), this->second(), this->third());
-		}
-
-		void operator%=(const direction direction)
-		{
-			if (this->get_direction() != direction) ~*this;
-		}
-
-		[[nodiscard]] friend bool operator<(
-			const two_dimensional::point& point, const triangle& triangle)
-		{
-			const auto triangle_direction = triangle.get_direction();
-
-			return
-				two_dimensional::get_direction(
-					triangle.first(), triangle.second(), point
-				) == triangle_direction &&
-
-				two_dimensional::get_direction(
-					triangle.second(), triangle.third(), point
-				) == triangle_direction &&
-
-				two_dimensional::get_direction(
-					triangle.third(), triangle.first(), point
-				) == triangle_direction;
-		}
-	};
-
-
-	template<bool IsTracking>
-	struct triangle<3, IsTracking> final : triangle_internal<3, IsTracking, triangle<3, IsTracking>>
-	{
-	private:
-		using base = triangle_internal<3, IsTracking, triangle<3, IsTracking>>;
-
-	public:
-		explicit triangle(
-			typename base::conditional_vertex first,
-			typename base::conditional_vertex second,
-			typename base::conditional_vertex third) noexcept :
-
-			base{ std::move(first), std::move(second), std::move(third) } { }
-
-
-		[[nodiscard]] three_dimensional::plane get_plane() const
-		{
-			return three_dimensional::get_common_plane(
-				three_dimensional::to_cartesian_coordinates(this->first()), 
-				three_dimensional::to_cartesian_coordinates(this->second()), 
-				three_dimensional::to_cartesian_coordinates(this->third()));
-		}
-
-		[[nodiscard]] three_dimensional::plane_normal get_plane_normal() const
-		{
-			return three_dimensional::get_plane_normal(
-				three_dimensional::to_cartesian_coordinates(this->first()),
-				three_dimensional::to_cartesian_coordinates(this->second()),
-				three_dimensional::to_cartesian_coordinates(this->third()));
-		}
-
-		[[nodiscard]] three_dimensional::cartesian_coordinates get_center() const
-		{
-			return three_dimensional::to_cartesian_coordinates(this->first()) +
-				three_dimensional::to_cartesian_coordinates(this->second()) +
-				three_dimensional::to_cartesian_coordinates(this->third()) / 3.0f;
-		}
-		
-		[[nodiscard]] friend bool operator<(
-			const three_dimensional::point& point, const triangle& triangle)
-		{
-			return three_dimensional::get_direction(point, triangle.get_plane());
-		}
-	};
-}
 
 namespace irglab::two_dimensional
 {

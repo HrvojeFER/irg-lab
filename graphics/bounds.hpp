@@ -16,14 +16,20 @@ namespace irglab
 	struct bounds<2>
 	{
 	private:
-		number x_min_{ number_max };
-		number x_max_{ number_min };
+		number x_min_;
+		number x_max_;
 
-		number y_min_{ number_max };
-		number y_max_{ number_min };
+		number y_min_;
+		number y_max_;
 
 
 	public:
+		explicit bounds (
+			number x_min = number_max, number x_max = number_min, 
+			number y_min = number_max, number y_max = number_min) :
+			x_min_{ std::move(x_min) }, x_max_{ std::move(x_max) },
+			y_min_{ std::move(y_min) }, y_max_{ std::move(y_max) } { }
+		
 		bounds operator|(const point<2>& point) const noexcept
 		{
 			auto new_bounds{ *this };
@@ -100,16 +106,25 @@ namespace irglab
 	struct bounds<3>
 	{
 	private:
-		number x_min_{ number_max };
-		number x_max_{ number_min };
+		number x_min_;
+		number x_max_;
 
-		number y_min_{ number_max };
-		number y_max_{ number_min };
+		number y_min_;
+		number y_max_;
 
-		number z_min_{ number_max };
-		number z_max_{ number_min };
+		number z_min_;
+		number z_max_;
 
 	public:
+		explicit bounds(
+			number x_min = number_max, number x_max = number_min,
+			number y_min = number_max, number y_max = number_min,
+			number z_min = number_max, number z_max = number_min) :
+
+			x_min_{ std::move(x_min) }, x_max_{ std::move(x_max) },
+			y_min_{ std::move(y_min) }, y_max_{ std::move(y_max) },
+			z_min_{ std::move(z_min) }, z_max_{ std::move(z_max) } { }
+
 		bounds operator|(const point<3>& point) const noexcept
 		{
 			auto new_bounds{ *this };
