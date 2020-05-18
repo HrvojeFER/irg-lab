@@ -58,13 +58,13 @@ namespace irglab
 		explicit light_source(
 			point position,
 			
-			const rational_number ambient_intensity = 0.5f,
-			const rational_number diffuse_intensity = 0.5f,
-			const rational_number specular_intensity = 2.0f,
+			const rational_number ambient_intensity = 0.2f,
+			const rational_number diffuse_intensity = 0.3f,
+			const rational_number specular_intensity = 3.0f,
 
 			const small_natural_number shine = 10,
 
-			color hue = { 0.5f, 1.0f, 0.5f }) :
+			color hue = { 1.0f, 0.5f, 0.5f }) :
 
 			position_{ std::move(position) },
 
@@ -78,19 +78,21 @@ namespace irglab
 
 
 		[[nodiscard]] color get_lighting(
+			const point& viewpoint,
 			const point& vertex,
 			vector normal,
-			const rational_number ambient_coefficient = 0.5f,
-			const rational_number diffuse_coefficient = 0.5f,
-			const rational_number specular_coefficient = 0.5f) const
+			const rational_number ambient_coefficient = 0.1f,
+			const rational_number diffuse_coefficient = 0.3f,
+			const rational_number specular_coefficient = 2.0f) const
 		{
-			return hue_ * this->get_light_intensity(vertex, normal,
+			return hue_ * light_source::get_light_intensity(viewpoint, vertex, normal,
 				ambient_coefficient, diffuse_coefficient, specular_coefficient);
 		}
 
 	private:
 		[[nodiscard]] rational_number get_light_intensity(
-			const point& vertex, 
+			const point& viewpoint,
+			const point& vertex,
 			vector normal,
 			const rational_number ambient_coefficient,
 			const rational_number diffuse_coefficient,
@@ -99,20 +101,25 @@ namespace irglab
 			const auto position_cartesian = to_cartesian_coordinates<dimension_count>(position_);
 			const auto vertex_cartesian = to_cartesian_coordinates<dimension_count>(vertex);
 
-			normalize<dimension_count>(normal);
+			normal = glm::normalize(normal);
 
+			
 			const auto light_direction = light_source::get_light_direction(
 				position_cartesian, vertex_cartesian);
-
 			const auto normal_dot_light_direction = glm::dot(normal, light_direction);
 			
-			const auto reflection_direction = this->get_reflection_direction(
+			const auto reflection_direction = light_source::get_reflection_direction(
 				light_direction, normal_dot_light_direction, normal);
+
+			const auto viewpoint_direction = light_source::get_viewpoint_direction(
+				vertex, viewpoint);
+
 			
 			return
 				this->get_ambient_component(ambient_coefficient) +
 				this->get_diffuse_component(diffuse_coefficient, normal_dot_light_direction) +
-				this->get_specular_component(specular_coefficient, reflection_direction, normal);
+				this->get_specular_component(
+					specular_coefficient, reflection_direction, viewpoint_direction);
 		}
 		
 		[[nodiscard]] rational_number get_ambient_component(const rational_number coefficient) const
@@ -133,20 +140,21 @@ namespace irglab
 		[[nodiscard]] rational_number get_specular_component(
 			const rational_number coefficient,
 			const vector& reflection_direction,
-			const vector& normal) const
+			const vector& viewpoint_direction) const
 		{
-			auto normal_coefficient = glm::dot(reflection_direction, normal);
-			normal_coefficient = normal_coefficient > min_normal_coefficient ?
-				normal_coefficient : min_normal_coefficient;
+			auto shine_coefficient = glm::dot(reflection_direction, viewpoint_direction);
+			shine_coefficient = shine_coefficient > min_normal_coefficient ?
+				shine_coefficient : min_normal_coefficient;
 
-			return specular_intensity_ * coefficient * glm::pow(normal_coefficient, shine_);
+			return specular_intensity_ * coefficient * 
+				static_cast<rational_number>(glm::pow(shine_coefficient, shine_));
 		}
 
 		[[nodiscard]] static vector get_light_direction(
 			const cartesian_coordinates& position,
 			const cartesian_coordinates& vertex)
 		{
-			return position - vertex;
+			return glm::normalize(position - vertex);
 		}
 
 		[[nodiscard]] static vector get_reflection_direction(
@@ -154,7 +162,14 @@ namespace irglab
 			const rational_number normal_dot_light_direction,
 			const vector& normal)
 		{
-			return normal * (2 * normal_dot_light_direction) - light_direction;
+			return glm::normalize(normal * (2 * normal_dot_light_direction) - light_direction);
+		}
+
+		[[nodiscard]] static vector get_viewpoint_direction(
+			const cartesian_coordinates& vertex,
+			const cartesian_coordinates& viewpoint)
+		{
+			return glm::normalize(viewpoint - vertex);
 		}
 	};
 }

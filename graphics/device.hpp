@@ -39,6 +39,11 @@ namespace irglab
             return to_unordered_set().size() == 3;
         }
 
+    	[[nodiscard]] bool has_same_graphics_and_transfer_family() const
+        {
+            return graphics_family == transfer_family;
+        }
+
         [[nodiscard]] std::unordered_set<unsigned int> to_unordered_set() const
         {
             return

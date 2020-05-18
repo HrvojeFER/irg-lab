@@ -3,6 +3,7 @@
 
 
 #include "pch.hpp"
+#include "extensions.hpp"
 
 #include "device.hpp"
 #include "swapchain.hpp"
@@ -10,7 +11,6 @@
 
 #include "render_pass.hpp"
 #include "shader_manager.hpp"
-#include "synchronizer.hpp"
 
 
 namespace irglab
@@ -34,19 +34,11 @@ namespace irglab
         };
 
 	public:
-        struct description
-        {
-            vk::PrimitiveTopology topology;
-        };
-		
 		explicit pipeline(
-            description&& description,
             const device& device,
             const swapchain& swapchain,
             const memory_manager& memory_manager) :
 
-			description_{ description },
-		
             render_pass_{ device, swapchain },
 
             shader_manager_
@@ -107,8 +99,6 @@ namespace irglab
 
 		
 	private:
-        const description description_;
-		
         render_pass render_pass_;
 
         const shader_manager shader_manager_;
@@ -167,7 +157,7 @@ namespace irglab
             vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info
             {
                 {},
-                description_.topology,
+                vk::PrimitiveTopology::eLineList,
                 VK_FALSE
             };
 
@@ -437,27 +427,13 @@ namespace irglab
 
                 command_buffers[i]->bindPipeline(vk::PipelineBindPoint::eGraphics, *inner_);
 
-            	if (description_.topology == vk::PrimitiveTopology::eLineList)
-            	{
-                    command_buffers[i]->bindVertexBuffers(0,
-	                    {
-	                        memory_manager.buffer()
-	                    },
-		                {
-		                    memory_manager::line_buffer_offset
-						});
-
-            	}
-                else if(description_.topology == vk::PrimitiveTopology::eTriangleList)
-                {
-                    command_buffers[i]->bindVertexBuffers(0,
-                        {
-                            memory_manager.buffer()
-                        },
-                        {
-                            memory_manager::triangle_buffer_offset
-                        });
-                }
+                command_buffers[i]->bindVertexBuffers(0,
+                    {
+                        memory_manager.buffer()
+                    },
+                    {
+                        0
+                    });
             	
                 command_buffers[i]->draw(
                     memory_manager::vertex_count,

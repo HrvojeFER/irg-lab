@@ -27,7 +27,7 @@ namespace irglab
 	struct [[maybe_unused]] animation_app final : app_base
 	{
 		explicit animation_app(
-			const std::string& path_to_body_file = "./objects/cube.obj"
+			const std::string& path_to_body_file = "./objects/teddy.obj"
 #if !defined(NDEBUG)
 			, const std::string& path_to_reference_plane_file = "./objects/reference_plane.obj"
 #endif
@@ -36,11 +36,9 @@ namespace irglab
 			body_{ three_dimensional::convex_tracking_body::parse(
 				read_object_file(path_to_body_file)) }
 		{
-			std::cout << body_;
 			body_.prune();
 			
 			body_ &= vulkan_friendly_limit;
-			std::cout << body_;
 			
 #if !defined(NDEBUG)
 			reference_frame_ += three_dimensional::convex_tracking_body::parse(
@@ -68,7 +66,7 @@ namespace irglab
 
 		three_dimensional::light_source light_source_
 		{
-			{ 0.0f, -3.0f, 0.0f, 1.0f }
+			{ -0.1f, 0.1f, -2.0f, 1.0f }
 		};
 		
 #if !defined(NDEBUG)
@@ -88,21 +86,22 @@ namespace irglab
 
 		// Animations per second.
 		rational_number animation_speed_ = 1.0f;
-		bool did_exit_animation_ = false;
+		bool did_exit_animation_ = true;
 		std::chrono::time_point<std::chrono::system_clock> animation_start_{};
 
 
 		void pre_run() override
 		{
+			/*animation_start_ = std::chrono::system_clock::now();
 			window_->on_key_oneshot(GLFW_KEY_ESCAPE, GLFW_PRESS,
 				[&]()
 				{
 					did_exit_animation_ = true;
 					setup_movement();
-				});
+				});*/
 
+			setup_movement();
 			set_scene_for_drawing();
-			animation_start_ = std::chrono::system_clock::now();
 		}
 
 		void loop() override
@@ -347,36 +346,52 @@ namespace irglab
 
 					first_normal /= first_normal_count;
 					second_normal /= second_normal_count;
+					third_normal /= third_normal_count;
 
 					const auto first_lighting =
-						light_source_.get_lighting(shared_triangle->first(), first_normal);
+						light_source_.get_lighting(
+							camera_.viewpoint(), shared_triangle->first(), first_normal);
 					const auto second_lighting =
-						light_source_.get_lighting(shared_triangle->second(), second_normal);
+						light_source_.get_lighting(
+							camera_.viewpoint(), shared_triangle->second(), second_normal);
 					const auto third_lighting =
-						light_source_.get_lighting(shared_triangle->third(), second_normal);
+						light_source_.get_lighting(
+							camera_.viewpoint(), shared_triangle->third(), third_normal);
 
 					auto triangle = shared_triangle->get_detached();
 					triangle *= view_transformation;
 
-					const auto wire_begin_cartesian =
-						three_dimensional::to_cartesian_coordinates(wire.begin());
-					const auto wire_end_cartesian =
-						three_dimensional::to_cartesian_coordinates(wire.end());
+					const auto first_cartesian =
+						three_dimensional::to_cartesian_coordinates(triangle.first());
+					const auto second_cartesian =
+						three_dimensional::to_cartesian_coordinates(triangle.second());
+					const auto third_cartesian =
+						three_dimensional::to_cartesian_coordinates(triangle.third());
 
-					if (wire_begin_cartesian.z > 0 && wire_end_cartesian.z > 0)
+					if (first_cartesian.z > 0 && second_cartesian.z > 0 && third_cartesian.z > 0)
 					{
-						line_vertices.emplace_back(
+						triangle_vertices.emplace_back(
 							graphics_vertex
 							{
-								camera_.get_projection(wire_begin_cartesian),
-								{0.0f, 0.3f, 0.2f}
+								camera_.get_projection(first_cartesian),
+								graphics_vertex::color_vector{ 0.6f, 0.0f, 1.0f } *
+									first_lighting
 							});
 
-						line_vertices.emplace_back(
+						triangle_vertices.emplace_back(
 							graphics_vertex
 							{
-								camera_.get_projection(wire_end_cartesian),
-								{0.2f, 0.0f, 0.4f}
+								camera_.get_projection(second_cartesian),
+								graphics_vertex::color_vector{ 0.6f, 0.0f, 1.0f } *
+									second_lighting
+							});
+
+						triangle_vertices.emplace_back(
+							graphics_vertex
+							{
+								camera_.get_projection(third_cartesian),
+								graphics_vertex::color_vector{ 0.6f, 0.0f, 1.0f } * 
+									third_lighting
 							});
 					}
 				}
@@ -481,9 +496,11 @@ namespace irglab
 				end_normal /= end_normal_count;
 
 				const auto begin_lighting =
-					light_source_.get_lighting(wire.begin(), begin_normal);
+					light_source_.get_lighting(
+						camera_.viewpoint(), wire.begin(), begin_normal);
 				const auto end_lighting =
-					light_source_.get_lighting(wire.end(), end_normal);
+					light_source_.get_lighting(
+						camera_.viewpoint(), wire.end(), end_normal);
 				
 				if (wire_begin_cartesian.z > 0 && wire_end_cartesian.z > 0)
 				{
@@ -520,14 +537,14 @@ namespace irglab
 						graphics_vertex
 						{
 							camera_.get_projection(wire_begin_cartesian),
-							{0.0f, 0.6f, 0.4f}
+							{0.0f, 0.3f, 0.2f}
 						});
 
 					line_vertices.emplace_back(
 						graphics_vertex
 						{
 							camera_.get_projection(wire_end_cartesian),
-							{0.0f, 0.4f, 0.6f}
+							{0.0f, 0.2f, 0.3f}
 						});
 				}
 			}
@@ -538,9 +555,10 @@ namespace irglab
 				static_cast<float>(window_extent.height);
 
 			for (auto& vertex : line_vertices) vertex.position.x /= aspect_ratio;
+			for (auto& vertex : triangle_vertices) vertex.position.x /= aspect_ratio;
 
-			artist_.set_line_vertices_to_draw(line_vertices);
-			artist_.set_triangle_vertices_to_draw(triangle_vertices);
+			// artist_.set_vertices_to_draw(triangle_vertices);
+			artist_.set_vertices_to_draw(line_vertices);
 		}
 	};
 }
