@@ -5,6 +5,7 @@
 #include "pch.hpp"
 
 #include "primitives.hpp"
+
 /*
  * In GLM, everything is set column by column, so, in order to make sense of the transformations visually,
  * I set them row by row and then transposed all of them. This doesn't affect performance a lot because,
@@ -14,14 +15,22 @@
 
 namespace irglab
 {
-	template<size DimensionCount>
+	template<small_natural_number DimensionCount, std::enable_if_t<
+		is_matrix_size_supported_v<DimensionCount + 1, DimensionCount + 1>,
+	int> = 0>
 	using transformation = irglab::matrix<DimensionCount + 1, DimensionCount + 1>;
 
+	
+	template<small_natural_number DimensionCount, std::enable_if_t<
+		is_matrix_size_supported_v<DimensionCount + 1, DimensionCount + 1>,
+	int> = 0>
 	// Columns are orthonormal vectors.
-	template<size DimensionCount>
 	using orthonormal_base = irglab::matrix<DimensionCount + 1, DimensionCount + 1>;
 
-	template<size DimensionCount>
+	
+	template<small_natural_number DimensionCount, std::enable_if_t<
+		is_vector_size_supported_v<DimensionCount>,
+	int> = 0>
 	using axis = irglab::vector<DimensionCount>;
 }
 
@@ -32,7 +41,7 @@ namespace irglab::two_dimensional
 	using axis = irglab::axis<dimension_count>;
 
 	[[nodiscard]] inline transformation get_scale_transformation(
-		const number scaling_factor) noexcept
+		const rational_number scaling_factor) noexcept
 	{
 		return
 			transpose(transformation
@@ -44,8 +53,8 @@ namespace irglab::two_dimensional
 	}
 
 	[[nodiscard]] inline transformation get_translation(
-		const number x_translation,
-		const number y_translation) noexcept
+		const rational_number x_translation,
+		const rational_number y_translation) noexcept
 	{
 		return
 			transpose(transformation
@@ -86,8 +95,8 @@ namespace irglab::two_dimensional
 
 	[[nodiscard]] inline transformation get_perspective_transformation(
 		const angle angle, 
-		const number x_translation, 
-		const number y_translation) noexcept
+		const rational_number x_translation, 
+		const rational_number y_translation) noexcept
 	{
 		return get_rotation(angle) * get_translation(x_translation, y_translation);
 	}
@@ -100,7 +109,7 @@ namespace irglab::three_dimensional
 	using axis = irglab::axis<dimension_count>;
 
 	[[nodiscard]] inline transformation get_scale_transformation(
-		const number scaling_factor) noexcept
+		const rational_number scaling_factor) noexcept
 	{
 		return
 			transpose(transformation
@@ -113,9 +122,9 @@ namespace irglab::three_dimensional
 	}
 	
 	[[nodiscard]] inline transformation get_translation(
-		const number x_translation,
-		const number y_translation,
-		const number z_translation) noexcept
+		const rational_number x_translation,
+		const rational_number y_translation,
+		const rational_number z_translation) noexcept
 	{
 		return
 			transpose(transformation

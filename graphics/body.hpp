@@ -16,22 +16,23 @@
 namespace irglab
 {
 	template<
-	size DimensionCount, bool IsConvex, bool IsTracking>
-	struct is_body_description_supported : std::bool_constant<
-		(DimensionCount == 3 || DimensionCount == 2) && 
+	small_natural_number DimensionCount, bool IsConvex, bool IsTracking>
+	struct [[maybe_unused]] is_body_description_supported : std::bool_constant<
+		are_primitive_operations_supported<DimensionCount>::value && 
 		IsTracking> {};
 
-	template<size DimensionCount, bool IsConvex, bool IsTracking>
-	inline constexpr bool is_body_description_supported_v = 
+	template<small_natural_number DimensionCount, bool IsConvex, bool IsTracking>
+	[[maybe_unused]] inline constexpr bool is_body_description_supported_v =
 			is_body_description_supported<DimensionCount, IsConvex, IsTracking>::value;
+
 	
 	template<
-	size DimensionCount, bool IsConvex, bool IsTracking, std::enable_if_t<
+	small_natural_number DimensionCount, bool IsConvex, bool IsTracking, std::enable_if_t<
 		is_body_description_supported_v<DimensionCount, IsConvex, IsTracking>,
 	int> = 0>
-	struct body
+	struct [[maybe_unused]] body
 	{
-		static constexpr size dimension_count = DimensionCount;
+		static constexpr natural_number dimension_count = DimensionCount;
 		static constexpr bool is_convex = IsConvex;
 		static constexpr bool is_tracking = IsTracking;
 		
@@ -134,38 +135,16 @@ namespace irglab
 
 		constexpr void normalize() const
 		{
-			for (auto& triangle : triangles_) triangle->normalize();
+			for (auto& vertex : vertices_) irglab::normalize<DimensionCount>(*vertex);
 		}
 
 		constexpr void operator*=(
 			const transformation<dimension_count>& transformation) const noexcept
 		{
-			for (auto& triangle : triangles_) *triangle *= transformation;
+			for (auto& vertex : vertices_) *vertex = *vertex * transformation;
 		}
 
 
-		
-		// Convex
-
-		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void>&& is_convex == true,
-			int> = 0>
-			[[nodiscard]] friend bool operator<(
-				const three_dimensional::point& point, const body& body)
-		{
-			for (const auto& triangle : body.triangles_)
-			{
-				if (not (point < *triangle))
-				{
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-
-		
 		// Three dimensional
 
 		template<typename Dummy = void, std::enable_if_t<
@@ -269,9 +248,9 @@ namespace irglab
 	private:
 		template<typename Dummy = void, std::enable_if_t<
 			std::is_same_v<Dummy, void>&& dimension_count == 3,
-			int> = 0>
-			[[nodiscard]] static three_dimensional::bounds get_normalization_bounds(
-				const number limit) noexcept
+		int> = 0>
+		[[nodiscard]] static three_dimensional::bounds get_normalization_bounds(
+				const rational_number limit) noexcept
 		{
 			return three_dimensional::bounds
 			{
@@ -285,47 +264,87 @@ namespace irglab
 				limit
 			};
 		}
+
+
+		// Convex
+
+	public:
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& is_convex == true,
+		int> = 0>
+		[[nodiscard]] friend bool operator<(
+				const three_dimensional::point& point, const body& body)
+		{
+			for (const auto& triangle : body.triangles_)
+			{
+				if (not (point < *triangle))
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+
+		// IsTracking
+
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& is_tracking == true,
+		int> = 0>
+		void prune() const
+		{
+			for (const auto& vertex : vertices_) vertex.prune();
+		}
 	};
 
-	template<size DimensionCount, bool IsConvex>
-	using tracking_body = body<DimensionCount, IsConvex, true>;
+	
+	template<small_natural_number DimensionCount, bool IsConvex>
+	using tracking_body [[maybe_unused]] = body<DimensionCount, IsConvex, true>;
 
-	template<size DimensionCount, bool IsTracking>
-	using concave_body = body<DimensionCount, false, IsTracking>;
+	
+	template<small_natural_number DimensionCount, bool IsTracking>
+	using concave_body [[maybe_unused]] = body<DimensionCount, false, IsTracking>;
 
-	template<size DimensionCount, bool IsTracking>
-	using convex_body = body<DimensionCount, true, IsTracking>;
+	template<small_natural_number DimensionCount, bool IsTracking>
+	using convex_body [[maybe_unused]] = body<DimensionCount, true, IsTracking>;
 
-	template<size DimensionCount>
-	using convex_tracking_body = body<DimensionCount, true, true>;
+	
+	template<small_natural_number DimensionCount>
+	using convex_tracking_body [[maybe_unused]] = body<DimensionCount, true, true>;
+
+	template<small_natural_number DimensionCount>
+	using concave_tracking_body [[maybe_unused]] = body<DimensionCount, false, true>;
 
 
 	
 	template<
-	size DimensionCount, bool IsConvex, bool IsTracking, std::enable_if_t<
+	small_natural_number DimensionCount, bool IsConvex, bool IsTracking, std::enable_if_t<
 		is_body_description_supported_v<DimensionCount, IsConvex, IsTracking>,
 	int> = 0>
-		struct body_descriptor
+		struct [[maybe_unused]] body_descriptor
 	{
-		static constexpr size dimension_count = DimensionCount;
+		static constexpr natural_number dimension_count = DimensionCount;
 		static constexpr bool is_convex = IsConvex;
 		static constexpr bool is_tracking = IsTracking;
 	};
 
+	
 	template<
 	typename CheckType, typename = void>
-	struct is_body_descriptor : std::false_type {};
+	struct [[maybe_unused]] is_body_descriptor : std::false_type {};
 
 	template<
 		typename CheckType>
-	struct is_body_descriptor<CheckType, std::enable_if_t<
-		std::is_same_v<decltype(CheckType::dimension_count), const size> &&
+	struct [[maybe_unused]] is_body_descriptor<CheckType, std::enable_if_t<
+		std::is_same_v<decltype(CheckType::dimension_count), const small_natural_number> &&
 		std::is_same_v<decltype(CheckType::is_convex), const bool> &&
 		std::is_same_v<decltype(CheckType::is_tracking), const bool>,
 		void>> : std::true_type {};
 
 	template<typename CheckType>
-	inline constexpr bool is_body_descriptor_v = is_body_descriptor<CheckType>::value;
+	[[maybe_unused]] inline constexpr bool is_body_descriptor_v = 
+		is_body_descriptor<CheckType>::value;
 
 	
 	template<typename Descriptor, std::enable_if_t<is_body_descriptor_v<Descriptor>, int> = 0>
@@ -338,21 +357,28 @@ namespace irglab
 namespace irglab::three_dimensional
 {
 	template<bool IsConvex, bool IsTracking>
-	using body = irglab::body<dimension_count, IsConvex, IsTracking>;
+	using body [[maybe_unused]] = irglab::body<dimension_count, IsConvex, IsTracking>;
+
 	
 	template<bool IsConvex>
-	using tracking_body = irglab::tracking_body<dimension_count, IsConvex>;
+	using tracking_body [[maybe_unused]] = irglab::tracking_body<dimension_count, IsConvex>;
+
+	
+	template<bool IsTracking>
+	using concave_body [[maybe_unused]] = irglab::concave_body<dimension_count, IsTracking>;
 
 	template<bool IsTracking>
-	using concave_body = irglab::concave_body<dimension_count, IsTracking>;
+	using convex_body [[maybe_unused]] = irglab::convex_body<dimension_count, IsTracking>;
 
-	template<bool IsTracking>
-	using convex_body = irglab::convex_body<dimension_count, IsTracking>;
+	
+	using convex_tracking_body [[maybe_unused]] = irglab::convex_tracking_body<dimension_count>;
 
-	using convex_tracking_body = irglab::convex_tracking_body<dimension_count>;
+	using concave_tracking_body [[maybe_unused]] = irglab::concave_tracking_body<dimension_count>;
 
 
-	[[nodiscard]] inline convex_tracking_body operator""_body(const char* chars, size)
+	
+	[[nodiscard, maybe_unused]] inline convex_tracking_body operator""_body(
+		const char* chars, natural_number)
 	{
 		std::istringstream char_stream{ chars };
 

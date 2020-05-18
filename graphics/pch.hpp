@@ -51,6 +51,7 @@
 #define GLM_FORCE_SIZE_T_LENGTH
 #if defined(NDEBUG)
 #define GLM_FORCE_INTRINSICS
+#define GLM_CONFIG_ALIGNED_GENTYPES
 #endif
 #include "glm.hpp"
 #include "gtx/string_cast.hpp"

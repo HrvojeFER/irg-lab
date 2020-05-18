@@ -13,13 +13,28 @@
 
 namespace irglab
 {
-	template<size DimensionCount, bool IsTracking>
+	template<
+	small_natural_number DimensionCount, bool IsTracking>
+		struct is_wireframe_description_supported : std::bool_constant<
+		DimensionCount == 3 || DimensionCount == 2> {};
+
+	template<small_natural_number DimensionCount, bool IsTracking>
+	constexpr bool is_wireframe_description_supported_v =
+		is_wireframe_description_supported<DimensionCount, IsTracking>::value;
+
+	
+	template<
+	small_natural_number DimensionCount, bool IsTracking>
 	struct wireframe;
 
 	
-	template<size DimensionCount>
+	template<
+	small_natural_number DimensionCount>
 	struct wireframe<DimensionCount, false>
 	{
+		static constexpr small_natural_number dimension_count = DimensionCount;
+		static constexpr bool is_tracking = false;
+		
 		using wire = irglab::owning_wire<DimensionCount>;
 		using vertex = typename wire::point;
 
@@ -51,7 +66,7 @@ namespace irglab
 
 
 		friend constexpr  void operator|=(
-			bounds<DimensionCount>& bounds, const wireframe& wireframe) noexcept
+			bounds<dimension_count>& bounds, const wireframe& wireframe) noexcept
 		{
 			for (const auto& wire : wireframe.wires_) bounds |= wire;
 		}
@@ -72,7 +87,7 @@ namespace irglab
 			for (auto& wire : wires_) wire.normalize();
 		}
 
-		constexpr void operator*=(const transformation<DimensionCount>& transformation) noexcept
+		constexpr void operator*=(const transformation<dimension_count>& transformation) noexcept
 		{
 			for (auto& wire : wires_) wire *= transformation;
 		}
@@ -89,13 +104,19 @@ namespace irglab
 		}
 	};
 
-	template<size DimensionCount>
+	template<small_natural_number DimensionCount, std::enable_if_t<
+		is_wireframe_description_supported_v<DimensionCount, false>,
+	int> = 0>
 	using owning_wireframe = wireframe<DimensionCount, false>;
 
 	
-	template<size DimensionCount>
+	template<
+	small_natural_number DimensionCount>
 	struct wireframe<DimensionCount, true>
 	{
+		static constexpr small_natural_number dimension_count = DimensionCount;
+		static constexpr bool is_tracking = true;
+
 		using wire = tracking_wire<DimensionCount>;
 		using shared_wire = std::shared_ptr<wire>;
 		using vertex = typename wire::point;
@@ -123,7 +144,7 @@ namespace irglab
 
 		
 		friend constexpr  void operator|=(
-			bounds<DimensionCount>& bounds, const wireframe& wireframe) noexcept
+			bounds<dimension_count>& bounds, const wireframe& wireframe) noexcept
 		{
 			for (const auto& vertex : wireframe.vertices_) bounds |= *vertex;
 		}
@@ -141,12 +162,12 @@ namespace irglab
 
 		constexpr void normalize() const
 		{
-			for (auto& wire : wires_) wire->normalize();
+			for (const auto& vertex : vertices_) irglab::normalize<dimension_count>(*vertex);
 		}
 
 		constexpr void operator*=(const transformation<DimensionCount>& transformation) const noexcept
 		{
-			for (auto& vertex : vertices_) *vertex *= transformation;
+			for (const auto& vertex : vertices_) *vertex = *vertex * transformation;
 		}
 
 
@@ -184,9 +205,12 @@ namespace irglab
 		}
 	};
 
-	template<size DimensionCount>
+	template<natural_number DimensionCount, std::enable_if_t<
+		is_wireframe_description_supported_v<DimensionCount, true>,
+	int> = 0>
 	using tracking_wireframe = wireframe<DimensionCount, true>;
 }
+
 
 namespace irglab::two_dimensional
 {
@@ -196,6 +220,7 @@ namespace irglab::two_dimensional
 	using tracking_wireframe = irglab::tracking_wireframe<dimension_count>;
 	using owning_wireframe = irglab::owning_wireframe<dimension_count>;
 }
+
 
 namespace irglab::three_dimensional
 {

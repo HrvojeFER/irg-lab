@@ -210,7 +210,7 @@ namespace irglab
 			return &*inner_;
 		}
 
-		[[nodiscard]] std::shared_ptr<InnerType> shared_inner() const noexcept
+		[[nodiscard]] const std::shared_ptr<InnerType>& inner() const noexcept
 		{
 			return inner_;
 		}

@@ -10,102 +10,119 @@
 
 namespace irglab
 {
-	template<size DimensionCount>
-	struct [[maybe_unused]] camera_internal
-	{
-		using point = point<DimensionCount>;
-		using orthonormal_base = orthonormal_base<DimensionCount>;
+	template<small_natural_number DimensionCount>
+	struct [[maybe_unused]] is_camera_description_supported :
+		are_primitive_operations_supported<DimensionCount> {};
 
-		point viewpoint;
-		orthonormal_base viewpoint_base;
-
-	protected:
-		constexpr explicit camera_internal(
-			const point& viewpoint,
-			const orthonormal_base& viewpoint_base) noexcept :
-			viewpoint{ viewpoint },
-			viewpoint_base{ viewpoint_base }{ }
-	};
+	template<small_natural_number DimensionCount>
+	[[maybe_unused]] inline constexpr bool is_camera_description_supported_v =
+		is_camera_description_supported<DimensionCount>::value;
 
 	
-	template<size DimensionCount>
-	struct camera final : camera_internal<DimensionCount> { camera() = delete; };
-
-
-	template<>
-	struct [[maybe_unused]] camera<2> final : camera_internal<2>
+	template<small_natural_number DimensionCount, std::enable_if_t<
+		is_camera_description_supported_v<DimensionCount>,
+	int> = 0>
+	struct [[maybe_unused]] camera final
 	{
-		constexpr explicit camera(
-			const point& viewpoint = { 0.0f, 0.0f, 1.0f },
-			const orthonormal_base& viewpoint_base = orthonormal_base{ 1.0f }) noexcept :
-			camera_internal<2>{ viewpoint, viewpoint_base } { }
-	};
-
-	
-	template<>
-	struct [[maybe_unused]] camera<3> final : camera_internal<3>
-	{
-		static inline const point origin = { 0.0f, 0.0f, 0.0f, 1.0f };
+		static constexpr small_natural_number dimension_count = DimensionCount;
 		
-		number projection_plane_distance;
+		using point = point<dimension_count>;
+		using rotation = orthonormal_base<dimension_count>;
+
+		static inline const point origin{ 0.0f, 0.0f, 0.0f, 1.0f };
+
+	private:
+		point viewpoint_;
+		rotation rotation_;
+		rational_number projection_plane_distance_;
+
+	public:
+		[[nodiscard]] const point& viewpoint() const
+		{
+			return viewpoint_;
+		}
+
+		void set_viewpoint(point new_viewpoint)
+		{
+			viewpoint_ = std::move(new_viewpoint);
+		}
+
 		
 		constexpr explicit camera(
-			const point& viewpoint = { -0.1f, 0.1f, -2.0f, 1.0f },
-			const orthonormal_base& viewpoint_base = orthonormal_base { 1.0f },
-			const number projection_plane_distance = 1.0f) noexcept :
-			camera_internal<3>{ viewpoint, viewpoint_base },
-			projection_plane_distance{ projection_plane_distance } { }
+			point viewpoint,
+			rotation viewpoint_base,
+			const rational_number projection_plane_distance) noexcept :
+
+			viewpoint_{ std::move(viewpoint) },
+			rotation_{ std::move(viewpoint_base) },
+			projection_plane_distance_{ projection_plane_distance } { }
 
 
+		
+		// Three dimensional
+
+		// Transformations
+		
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && dimension_count == three_dimensional::dimension_count,
+			int> = 0>
 		[[nodiscard]] three_dimensional::transformation get_view_transformation()
 		{
-			three_dimensional::normalize(viewpoint);
+			three_dimensional::normalize(viewpoint_);
 
 			return
 				three_dimensional::get_translation(
-				-viewpoint.x,
-				-viewpoint.y,
-				-viewpoint.z) *
-				viewpoint_base;
+				-viewpoint_.x,
+				-viewpoint_.y,
+				-viewpoint_.z) *
+				rotation_;
 		}
 
 		using projection = two_dimensional::cartesian_coordinates;
-		
+
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void> && dimension_count == three_dimensional::dimension_count,
+			int> = 0>
 		[[nodiscard]] projection get_projection(
 			const three_dimensional::cartesian_coordinates& point) const
 		{
 			return
 			{
-				point.x * projection_plane_distance / point.z,
-				point.y * projection_plane_distance / point.z
+				point.x * projection_plane_distance_ / point.z,
+				point.y * projection_plane_distance_ / point.z
 			};
 		}
 
 
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& dimension_count == three_dimensional::dimension_count,
+			int> = 0>
 		void point_to(const point& point)
 		{
-			point_to(point, three_dimensional::axis
-				{ viewpoint_base[1].x, viewpoint_base[1].y, viewpoint_base[1].z });
+			this->point_to(point, three_dimensional::axis
+				{ rotation_[1].x, rotation_[1].y, rotation_[1].z });
 		}
 		
-
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& dimension_count == three_dimensional::dimension_count,
+			int> = 0>
 		void point_to(const point& point, const three_dimensional::axis& view_down)
 		{
-			three_dimensional::normalize(viewpoint);
+			three_dimensional::normalize(viewpoint_);
 
 
 			const auto z_norm = glm::normalize(
 				three_dimensional::to_cartesian_coordinates(point) -  
 				three_dimensional::cartesian_coordinates
-					{ viewpoint.x, viewpoint.y, viewpoint.z });
+					{ viewpoint_.x, viewpoint_.y, viewpoint_.z });
 
 			const auto x_norm = glm::normalize(cross(view_down, z_norm));
 
 			const auto y_norm = cross(z_norm, x_norm);
 
 			
-			viewpoint_base =
-				transpose(orthonormal_base
+			rotation_ =
+				transpose(rotation
 					{
 						x_norm.x, y_norm.x, z_norm.x, 0.0f,
 						x_norm.y, y_norm.y, z_norm.y, 0.0f,
@@ -114,54 +131,80 @@ namespace irglab
 					});
 		}
 
+
+		// Movement
 		
-		void move_inward(const number step_size)
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& dimension_count == three_dimensional::dimension_count,
+			int> = 0>
+		void move_inward(const rational_number step_size)
 		{
-			three_dimensional::normalize(viewpoint);
-			viewpoint = viewpoint + viewpoint_base[2] * step_size;
+			three_dimensional::normalize(viewpoint_);
+			viewpoint_ = viewpoint_ + rotation_[2] * step_size;
 		}
 
-		void move_outward(const number step_size)
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& dimension_count == three_dimensional::dimension_count,
+			int> = 0>
+		void move_outward(const rational_number step_size)
 		{
-			three_dimensional::normalize(viewpoint);
-			viewpoint = viewpoint - viewpoint_base[2] * step_size;
+			three_dimensional::normalize(viewpoint_);
+			viewpoint_ = viewpoint_ - rotation_[2] * step_size;
 		}
 
-		void move_right(const number step_size)
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& dimension_count == three_dimensional::dimension_count,
+			int> = 0>
+		void move_right(const rational_number step_size)
 		{
-			three_dimensional::normalize(viewpoint);
-			viewpoint = viewpoint + viewpoint_base[0] * step_size;
+			three_dimensional::normalize(viewpoint_);
+			viewpoint_ = viewpoint_ + rotation_[0] * step_size;
 		}
-		
-		void move_left(const number step_size)
+
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& dimension_count == three_dimensional::dimension_count,
+			int> = 0>
+		void move_left(const rational_number step_size)
 		{
-			three_dimensional::normalize(viewpoint);
-			viewpoint = viewpoint - viewpoint_base[0] * step_size;
+			three_dimensional::normalize(viewpoint_);
+			viewpoint_ = viewpoint_ - rotation_[0] * step_size;
 		}
 
 
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& dimension_count == three_dimensional::dimension_count,
+			int> = 0>
 		void view_up(const angle angle)
 		{
-			viewpoint_base = 
-				three_dimensional::get_rotation(angle, viewpoint_base[0]) * viewpoint_base;
+			rotation_ = 
+				three_dimensional::get_rotation(angle, rotation_[0]) * rotation_;
 		}
 
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& dimension_count == three_dimensional::dimension_count,
+			int> = 0>
 		void view_down(const angle angle)
 		{
-			viewpoint_base = 
-				three_dimensional::get_rotation(-angle, viewpoint_base[0]) * viewpoint_base;
+			rotation_ = 
+				three_dimensional::get_rotation(-angle, rotation_[0]) * rotation_;
 		}
 
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& dimension_count == three_dimensional::dimension_count,
+			int> = 0>
 		void view_right(const angle angle)
 		{
-			viewpoint_base = 
-				three_dimensional::get_rotation(angle, viewpoint_base[1]) * viewpoint_base;
+			rotation_ = 
+				three_dimensional::get_rotation(angle, rotation_[1]) * rotation_;
 		}
-
+		
+		template<typename Dummy = void, std::enable_if_t<
+			std::is_same_v<Dummy, void>&& dimension_count == three_dimensional::dimension_count,
+			int> = 0>
 		void view_left(const angle angle)
 		{
-			viewpoint_base = 
-				three_dimensional::get_rotation(-angle, viewpoint_base[1]) * viewpoint_base;
+			rotation_ = 
+				three_dimensional::get_rotation(-angle, rotation_[1]) * rotation_;
 		}
 	};
 }
@@ -170,7 +213,6 @@ namespace irglab::two_dimensional
 {
 	using camera [[maybe_unused]] = irglab::camera<dimension_count>;
 }
-
 namespace irglab::three_dimensional
 {
 	using camera [[maybe_unused]] = irglab::camera<dimension_count>;

@@ -132,6 +132,9 @@
     <ClInclude Include="body.hpp">
       <Filter>Header Files\Geometry</Filter>
     </ClInclude>
+    <ClInclude Include="light_source.hpp">
+      <Filter>Header Files\Geometry</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="pre-build.ps1" />

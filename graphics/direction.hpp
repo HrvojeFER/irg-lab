@@ -7,7 +7,7 @@
 #include "primitives.hpp"
 
 
-// It would be great if this was an enum of some king,
+// It would be great if this was an enum of some kind,
 // but I'm not sure what the semantics of it would have to be.
 
 namespace irglab

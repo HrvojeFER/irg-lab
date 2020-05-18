@@ -9,24 +9,24 @@
 
 namespace irglab
 {
-	template<size DimensionCount>
+	template<small_natural_number DimensionCount>
 	struct bounds { bounds() = delete; };
 
 	template<>
 	struct bounds<2>
 	{
 	private:
-		number x_min_;
-		number x_max_;
+		rational_number x_min_;
+		rational_number x_max_;
 
-		number y_min_;
-		number y_max_;
+		rational_number y_min_;
+		rational_number y_max_;
 
 
 	public:
 		explicit bounds (
-			number x_min = number_max, number x_max = number_min, 
-			number y_min = number_max, number y_max = number_min) :
+			rational_number x_min = rational_number_max, rational_number x_max = rational_number_min, 
+			rational_number y_min = rational_number_max, rational_number y_max = rational_number_min) :
 			x_min_{ std::move(x_min) }, x_max_{ std::move(x_max) },
 			y_min_{ std::move(y_min) }, y_max_{ std::move(y_max) } { }
 		
@@ -106,20 +106,20 @@ namespace irglab
 	struct bounds<3>
 	{
 	private:
-		number x_min_;
-		number x_max_;
+		rational_number x_min_;
+		rational_number x_max_;
 
-		number y_min_;
-		number y_max_;
+		rational_number y_min_;
+		rational_number y_max_;
 
-		number z_min_;
-		number z_max_;
+		rational_number z_min_;
+		rational_number z_max_;
 
 	public:
 		explicit bounds(
-			number x_min = number_max, number x_max = number_min,
-			number y_min = number_max, number y_max = number_min,
-			number z_min = number_max, number z_max = number_min) :
+			rational_number x_min = rational_number_max, rational_number x_max = rational_number_min,
+			rational_number y_min = rational_number_max, rational_number y_max = rational_number_min,
+			rational_number z_min = rational_number_max, rational_number z_max = rational_number_min) :
 
 			x_min_{ std::move(x_min) }, x_max_{ std::move(x_max) },
 			y_min_{ std::move(y_min) }, y_max_{ std::move(y_max) },

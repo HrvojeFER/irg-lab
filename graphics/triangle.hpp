@@ -17,11 +17,26 @@
 namespace irglab
 {
 	template<
-	size DimensionCount, bool IsTracking = false, std::enable_if_t<
-		DimensionCount == 2 || DimensionCount == 3,
+	small_natural_number DimensionCount, bool IsTracking>
+	struct is_triangle_description_supported : 
+		are_primitive_operations_supported<DimensionCount> {};
+
+	template<small_natural_number DimensionCount, bool IsTracking>
+	inline constexpr bool is_triangle_description_supported_v =
+		is_triangle_description_supported<DimensionCount, IsTracking>::value;
+
+	
+	template<
+	small_natural_number DimensionCount, bool IsTracking = false, std::enable_if_t<
+		is_triangle_description_supported_v<DimensionCount, IsTracking>,
 	int> = 0>
 	struct triangle
 	{
+		static constexpr small_natural_number dimension_count = DimensionCount;
+		static constexpr small_natural_number is_tracking = IsTracking;
+
+		static constexpr small_natural_number vertex_count = 3;
+		
 		using vertex = point<DimensionCount>;
 		using tracked_vertex = tracked_pointer<vertex, triangle>;
 
@@ -43,24 +58,24 @@ namespace irglab
 		// Mutable accessors
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && !IsTracking,
-			int> = 0>
+			std::is_same_v<Dummy, void> && !is_tracking,
+		int> = 0>
 		[[nodiscard]] vertex& first_mutable()
 		{
 			return first_;
 		}
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && !IsTracking,
-			int> = 0>
+			std::is_same_v<Dummy, void> && !is_tracking,
+		int> = 0>
 		[[nodiscard]] vertex& second_mutable()
 		{
 			return second_;
 		}
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && !IsTracking,
-			int> = 0>
+			std::is_same_v<Dummy, void> && !is_tracking,
+		int> = 0>
 		[[nodiscard]] vertex& third_mutable()
 		{
 			return third_;
@@ -68,25 +83,25 @@ namespace irglab
 
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && IsTracking,
-			int> = 0>
-			[[nodiscard]] vertex& first_mutable() const
+			std::is_same_v<Dummy, void> && is_tracking,
+		int> = 0>
+		[[nodiscard]] vertex& first_mutable() const
 		{
 			return *first_;
 		}
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && IsTracking,
-			int> = 0>
-			[[nodiscard]] vertex& second_mutable() const
+			std::is_same_v<Dummy, void> && is_tracking,
+		int> = 0>
+		[[nodiscard]] vertex& second_mutable() const
 		{
 			return *second_;
 		}
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && IsTracking,
-			int> = 0>
-			[[nodiscard]] vertex& third_mutable() const
+			std::is_same_v<Dummy, void> && is_tracking,
+		int> = 0>
+		[[nodiscard]] vertex& third_mutable() const
 		{
 			return *third_;
 		}
@@ -116,7 +131,7 @@ namespace irglab
 
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && IsTracking,
+			std::is_same_v<Dummy, void> && is_tracking,
 			int> = 0>
 		[[nodiscard]] const tracked_vertex& first_tracked() const
 		{
@@ -124,7 +139,7 @@ namespace irglab
 		}
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && IsTracking,
+			std::is_same_v<Dummy, void> && is_tracking,
 			int> = 0>
 			[[nodiscard]] const tracked_vertex& second_tracked() const
 		{
@@ -132,7 +147,7 @@ namespace irglab
 		}
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && IsTracking,
+			std::is_same_v<Dummy, void> && is_tracking,
 			int> = 0>
 			[[nodiscard]] const tracked_vertex& third_tracked() const
 		{
@@ -150,27 +165,27 @@ namespace irglab
 		}
 
 
-		using barycentric_coordinates = vector<DimensionCount>;
+		using barycentric_coordinates = vector<dimension_count>;
 
 		[[nodiscard]] barycentric_coordinates get_barycentric_coordinates(
-			const point<DimensionCount>& point) const
+			const point<dimension_count>& point) const
 		{
-			return point * inverse(
-				glm::mat<3, DimensionCount + 1, number, precision>
+			return point * glm::inverse(
+				matrix<dimension_count + small_one, vertex_count>
 			{
 				first(), second(), third()
 			});
 		}
 
 
-		friend bounds<DimensionCount> operator|(
-			bounds<DimensionCount>& bounds, const triangle& triangle)
+		friend bounds<dimension_count> operator|(
+			bounds<dimension_count>& bounds, const triangle& triangle)
 		{
 			return bounds | triangle.first() | triangle.second() | triangle.third();
 		}
 
 		friend constexpr void operator|=(
-			bounds<DimensionCount>& bounds, const triangle& triangle)
+			bounds<dimension_count>& bounds, const triangle& triangle)
 		{
 			bounds |= triangle.first(), bounds |= triangle.second(), bounds |= triangle.third();
 		}
@@ -194,7 +209,7 @@ namespace irglab
 
 
 		triangle operator*(
-			const transformation<DimensionCount>& transformation) const noexcept
+			const transformation<dimension_count>& transformation) const noexcept
 		{
 			triangle new_triangle{ *this };
 
@@ -209,18 +224,18 @@ namespace irglab
 		// It would be great if this madness was shorter.
 		
 		friend void operator+=(
-			wireframe<DimensionCount, IsTracking>& wireframe,
+			wireframe<dimension_count, IsTracking>& wireframe,
 			const triangle& triangle)
 		{
 			if constexpr (IsTracking)
 			{
-				using wireframe_t = tracking_wireframe<DimensionCount>;
+				using wireframe_t = tracking_wireframe<dimension_count>;
 				using wireframe_tracked_vertex = typename wireframe_t::tracked_vertex;
 				using wireframe_wire = typename wireframe_t::wire;
 
-				wireframe_tracked_vertex first_vertex{ triangle.first_.shared_inner() };
-				wireframe_tracked_vertex second_vertex{ triangle.second_.shared_inner() };
-				wireframe_tracked_vertex third_vertex{ triangle.third_.shared_inner() };
+				wireframe_tracked_vertex first_vertex{ triangle.first_.inner() };
+				wireframe_tracked_vertex second_vertex{ triangle.second_.inner() };
+				wireframe_tracked_vertex third_vertex{ triangle.third_.inner() };
 
 				const auto first_wire = std::make_shared<wireframe_wire>(first_vertex, second_vertex);
 				const auto second_wire = std::make_shared<wireframe_wire>(second_vertex, third_vertex);
@@ -234,7 +249,7 @@ namespace irglab
 			}
 			else
 			{
-				using wire = typename owning_wireframe<DimensionCount>::wire;
+				using wire = typename owning_wireframe<dimension_count>::wire;
 				wireframe += wire{ triangle.first(), triangle.second() };
 				wireframe += wire{ triangle.second(), triangle.third() };
 				wireframe += wire{ triangle.third(), triangle.first() };
@@ -246,19 +261,19 @@ namespace irglab
 		// If not IsTracking
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && !IsTracking,
+			std::is_same_v<Dummy, void> && !is_tracking,
 			int> = 0>
 		constexpr void normalize()
 		{
-			irglab::normalize<DimensionCount>(this->first_mutable());
-			irglab::normalize<DimensionCount>(this->second_mutable());
-			irglab::normalize<DimensionCount>(this->third_mutable());
+			irglab::normalize<dimension_count>(this->first_mutable());
+			irglab::normalize<dimension_count>(this->second_mutable());
+			irglab::normalize<dimension_count>(this->third_mutable());
 		}
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && !IsTracking,
+			std::is_same_v<Dummy, void> && !is_tracking,
 			int> = 0>
-		constexpr void operator*=(const transformation<DimensionCount>& transformation) noexcept
+		constexpr void operator*=(const transformation<dimension_count>& transformation) noexcept
 		{
 			this->first_mutable() = this->first() * transformation;
 			this->second_mutable() = this->second() * transformation;
@@ -269,11 +284,11 @@ namespace irglab
 		// If IsTracking
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void>&& IsTracking,
+			std::is_same_v<Dummy, void>&& is_tracking,
 			int> = 0>
-		[[nodiscard]] triangle<DimensionCount, false> get_detached() const
+		[[nodiscard]] triangle<dimension_count, false> get_detached() const
 		{
-			return triangle<DimensionCount, false>
+			return triangle<dimension_count, false>
 			{
 				this->first(),
 				this->second(),
@@ -282,19 +297,19 @@ namespace irglab
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && IsTracking,
+			std::is_same_v<Dummy, void> && is_tracking,
 			int> = 0>
 		void normalize() const
 		{
-			irglab::normalize<DimensionCount>(this->first_mutable());
-			irglab::normalize<DimensionCount>(this->second_mutable());
-			irglab::normalize<DimensionCount>(this->third_mutable());
+			irglab::normalize<dimension_count>(this->first_mutable());
+			irglab::normalize<dimension_count>(this->second_mutable());
+			irglab::normalize<dimension_count>(this->third_mutable());
 		}
 
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && IsTracking,
+			std::is_same_v<Dummy, void> && is_tracking,
 			int> = 0>
-		void operator*=(const transformation<DimensionCount>& transformation) const
+		void operator*=(const transformation<dimension_count>& transformation) const
 		{
 			this->first_mutable() = this->first() * transformation;
 			this->second_mutable() = this->second() * transformation;
@@ -306,7 +321,8 @@ namespace irglab
 		// Two dimensional
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && DimensionCount == 2,
+			std::is_same_v<Dummy, void> && 
+			DimensionCount == two_dimensional::dimension_count,
 			int> = 0>
 		[[nodiscard]] direction get_direction() const
 		{
@@ -315,7 +331,8 @@ namespace irglab
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && DimensionCount == 2,
+			std::is_same_v<Dummy, void> &&
+			DimensionCount == two_dimensional::dimension_count,
 			int> = 0>
 		void operator%=(const direction direction)
 		{
@@ -323,7 +340,8 @@ namespace irglab
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && DimensionCount == 2,
+			std::is_same_v<Dummy, void> &&
+			DimensionCount == two_dimensional::dimension_count,
 			int> = 0>
 		[[nodiscard]] friend bool operator<(
 			const two_dimensional::point& point, const triangle& triangle)
@@ -348,8 +366,9 @@ namespace irglab
 		// Three dimensional
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && DimensionCount == 3,
-			int> = 0>
+			std::is_same_v<Dummy, void> && 
+			dimension_count == three_dimensional::dimension_count,
+		int> = 0>
 		[[nodiscard]] three_dimensional::plane get_plane() const
 		{
 			return three_dimensional::get_common_plane(
@@ -359,8 +378,9 @@ namespace irglab
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && DimensionCount == 3,
-			int> = 0>
+			std::is_same_v<Dummy, void> &&
+			dimension_count == three_dimensional::dimension_count,
+		int> = 0>
 		[[nodiscard]] three_dimensional::plane_normal get_plane_normal() const
 		{
 			return three_dimensional::get_plane_normal(
@@ -370,18 +390,21 @@ namespace irglab
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && DimensionCount == 3,
-			int> = 0>
+			std::is_same_v<Dummy, void> &&
+			dimension_count == three_dimensional::dimension_count,
+		int> = 0>
 		[[nodiscard]] three_dimensional::cartesian_coordinates get_center() const
 		{
-			return three_dimensional::to_cartesian_coordinates(this->first()) +
+			return
+				three_dimensional::to_cartesian_coordinates(this->first()) +
 				three_dimensional::to_cartesian_coordinates(this->second()) +
 				three_dimensional::to_cartesian_coordinates(this->third()) / 3.0f;
 		}
 		
 		template<typename Dummy = void, std::enable_if_t<
-			std::is_same_v<Dummy, void> && DimensionCount == 3,
-			int> = 0>
+			std::is_same_v<Dummy, void> &&
+			dimension_count == three_dimensional::dimension_count,
+		int> = 0>
 		[[nodiscard]] friend bool operator<(
 			const three_dimensional::point& point, const triangle& triangle)
 		{
@@ -389,23 +412,26 @@ namespace irglab
 		}
 	};
 
-	template<size DimensionCount, std::enable_if_t<
-		DimensionCount == 2 || DimensionCount == 3,
+	
+	template<natural_number DimensionCount, std::enable_if_t<
+		is_triangle_description_supported_v<DimensionCount, false>,
 	int> = 0>
 	using owning_triangle = triangle<DimensionCount, false>;
 	
-	template<size DimensionCount, std::enable_if_t<
-		DimensionCount == 2 || DimensionCount == 3,
+	template<natural_number DimensionCount, std::enable_if_t<
+		is_triangle_description_supported_v<DimensionCount, true>,
 	int> = 0>
 	using tracking_triangle = triangle<DimensionCount, true>;
 }
 
-template<irglab::size DimensionCount>
+
+template<irglab::natural_number DimensionCount>
 struct std::hash<irglab::tracking_triangle<DimensionCount>>
 {
-private:
 	using key = irglab::tracking_triangle<DimensionCount>;
+	static constexpr irglab::small_natural_number dimension_count = key::dimension_count;
 
+private:
 	using tracked_vertex = typename key::tracked_vertex;
 	static inline const std::hash<tracked_vertex> tracked_vertex_hasher{};
 
@@ -419,6 +445,7 @@ public:
 	}
 };
 
+
 namespace irglab::two_dimensional
 {
 	template<bool IsTracking>
@@ -427,6 +454,7 @@ namespace irglab::two_dimensional
 	using owning_triangle = irglab::owning_triangle<dimension_count>;
 	using tracking_triangle = irglab::tracking_triangle<dimension_count>;
 }
+
 
 namespace irglab::three_dimensional
 {

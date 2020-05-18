@@ -7,7 +7,6 @@
 
 #include "primitives.hpp"
 #include "direction.hpp"
-#include "bounds.hpp"
 
 #include "wire.hpp"
 #include "wireframe.hpp"
@@ -15,7 +14,9 @@
 
 namespace irglab
 {
-	template<size DimensionCount, typename Inheritor>
+	// Needs maintainance
+	
+	template<natural_number DimensionCount, typename Inheritor>
 	struct convex_polygon_internal
 	{
 		using vertex = point<DimensionCount>;
@@ -105,7 +106,7 @@ namespace irglab
 		}
 	};
 
-	template<size DimensionCount>
+	template<natural_number DimensionCount>
 	struct convex_polygon final :
 		convex_polygon_internal<DimensionCount, convex_polygon<DimensionCount>>
 	{
@@ -165,7 +166,7 @@ namespace irglab
 		{
 			const auto y_line = two_dimensional::get_line_at_y(y_coordinate);
 
-			two_dimensional::point max_left{ number_min, 0, 1 };
+			two_dimensional::point max_left{ rational_number_min, 0, 1 };
 			for (const auto& left_intersection :
 				get_intersections(left_edges_.begin(), left_edges_.end(), y_line))
 			{
@@ -176,7 +177,7 @@ namespace irglab
 				}
 			}
 
-			two_dimensional::point min_right{ number_max, 0, 1 };
+			two_dimensional::point min_right{ rational_number_max, 0, 1 };
 			for (const auto& right_intersection :
 				get_intersections(right_edges_.begin(), right_edges_.end(), y_line))
 			{
@@ -198,7 +199,7 @@ namespace irglab
 
 		[[nodiscard]] vertex get_vertex_on(const direction bottom_or_top) const
 		{
-			vertex result{ 0.0f, bottom_or_top ? number_max : number_min, 1.0f };
+			vertex result{ 0.0f, bottom_or_top ? rational_number_max : rational_number_min, 1.0f };
 
 			for (const auto& vertex : vertices_)
 				if (vertex.y / vertex.z < result.y / result.z == bottom_or_top) result = vertex;
@@ -220,7 +221,7 @@ namespace irglab
 					points[1],
 					points[2]);
 
-			for (size index = 1; index < points.size(); ++index)
+			for (natural_number index = 1; index < points.size(); ++index)
 			{
 				const auto&& current_direction =
 					two_dimensional::get_direction(
@@ -272,7 +273,7 @@ namespace irglab
 			if (static_cast<int>(std::distance(begin, end)) < 0)
 				throw std::runtime_error{ "Iterator distance is less than 0." };
 
-			std::vector<two_dimensional::point> result{ static_cast<size>(std::distance(begin, end)) };
+			std::vector<two_dimensional::point> result{ static_cast<natural_number>(std::distance(begin, end)) };
 
 			std::transform(begin, end, result.begin(),
 				[line](const irglab::two_dimensional::line& other)

@@ -17,7 +17,7 @@
 
 namespace irglab
 {
-	struct convex_polygon_app final : app_base
+	struct [[maybe_unused]] convex_polygon_app final : app_base
 	{
 		explicit convex_polygon_app() : app_base("Drawing window") { }
 

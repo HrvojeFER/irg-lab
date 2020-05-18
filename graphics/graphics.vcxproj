@@ -220,6 +220,7 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClInclude Include="direction.hpp" />
     <ClInclude Include="environment.hpp" />
     <ClInclude Include="extensions.hpp" />
+    <ClInclude Include="light_source.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="pipeline.hpp" />
     <ClInclude Include="primitives.hpp" />

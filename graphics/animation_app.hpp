@@ -2,20 +2,29 @@
 #define IRGLAB_ANIMATION_APP
 
 
+
 #include "pch.hpp"
+
 
 #include "app_base.hpp"
 #include "assets.hpp"
 
+
+#include "primitives.hpp"
+
 #include "curve.hpp"
+
 #include "wireframe.hpp"
 #include "body.hpp"
+
 #include "camera.hpp"
+#include "light_source.hpp"
+
 
 
 namespace irglab
 {
-	struct animation_app final : app_base
+	struct [[maybe_unused]] animation_app final : app_base
 	{
 		explicit animation_app(
 			const std::string& path_to_body_file = "./objects/cube.obj"
@@ -28,6 +37,7 @@ namespace irglab
 				read_object_file(path_to_body_file)) }
 		{
 			std::cout << body_;
+			body_.prune();
 			
 			body_ &= vulkan_friendly_limit;
 			std::cout << body_;
@@ -40,16 +50,27 @@ namespace irglab
 
 
 	private:
-		static inline const number vulkan_friendly_limit = 0.5f;
+		static inline const rational_number vulkan_friendly_limit = 0.5f;
 
-		static inline const number step_size = 0.2f;
-		static inline const number angle_step = 0.1f;
+		static inline const rational_number step_size = 0.2f;
+		static inline const rational_number angle_step = 0.1f;
 
-		static inline const size frame_rate = 60;
-		static inline const number frame_time = 1 / static_cast<float>(frame_rate);
+		static inline const rational_number frame_rate = 60.0f;
+		static inline const rational_number frame_time = 1 / static_cast<float>(frame_rate);
 
 
-		three_dimensional::camera camera_{};
+		three_dimensional::camera camera_
+		{
+			{ -0.1f, 0.1f, -2.0f, 1.0f },
+			three_dimensional::camera::rotation{ 1.0f },
+			1.0f
+		};
+
+		three_dimensional::light_source light_source_
+		{
+			{ 0.0f, -3.0f, 0.0f, 1.0f }
+		};
+		
 #if !defined(NDEBUG)
 		three_dimensional::tracking_wireframe reference_frame_{};
 #endif
@@ -66,7 +87,7 @@ namespace irglab
 		};
 
 		// Animations per second.
-		number animation_speed_ = 1.0f;
+		rational_number animation_speed_ = 1.0f;
 		bool did_exit_animation_ = false;
 		std::chrono::time_point<std::chrono::system_clock> animation_start_{};
 
@@ -86,7 +107,7 @@ namespace irglab
 
 		void loop() override
 		{
-			if (not did_exit_animation_)
+			if (!did_exit_animation_)
 			{
 				const auto current_animation_start =
 					std::chrono::system_clock::now();
@@ -102,8 +123,8 @@ namespace irglab
 					curve_parameter -= 1;
 				}
 
-				camera_.viewpoint =
-					three_dimensional::to_homogeneous_coordinates(curve_(curve_parameter));
+				camera_.set_viewpoint(
+					three_dimensional::to_homogeneous_coordinates(curve_(curve_parameter)));
 
 				camera_.point_to(three_dimensional::camera::origin, { 0.0f, 1.0f, 0.0f });
 
@@ -125,7 +146,7 @@ namespace irglab
 				[&]()
 				{
 					camera_.move_inward(step_size);
-					if (camera_.viewpoint < body_)
+					if (camera_.viewpoint() < body_)
 					{
 #if !defined(NDEBUG)
 						std::cout << "Step away from the body, you wretched beast!" << std::endl;
@@ -147,7 +168,7 @@ namespace irglab
 				[&]()
 				{
 					camera_.move_left(step_size);
-					if (camera_.viewpoint < body_)
+					if (camera_.viewpoint() < body_)
 					{
 #if !defined(NDEBUG)
 						std::cout << "Step away from the body, you wretched beast!" << std::endl;
@@ -169,7 +190,7 @@ namespace irglab
 				[&]()
 				{
 					camera_.move_outward(step_size);
-					if (camera_.viewpoint < body_)
+					if (camera_.viewpoint() < body_)
 					{
 #if !defined(NDEBUG)
 						std::cout << "Step away from the body, you wretched beast!" << std::endl;
@@ -191,7 +212,7 @@ namespace irglab
 				[&]()
 				{
 					camera_.move_right(step_size);
-					if (camera_.viewpoint < body_)
+					if (camera_.viewpoint() < body_)
 					{
 #if !defined(NDEBUG)
 						std::cout << "Step away from the body, you wretched beast!" << std::endl;
@@ -258,17 +279,20 @@ namespace irglab
 			three_dimensional::tracking_wireframe invisible{};
 #endif
 
+			const auto view_transformation = camera_.get_view_transformation();
 			const auto viewpoint_cartesian =
-				three_dimensional::to_cartesian_coordinates(camera_.viewpoint);
+				three_dimensional::to_cartesian_coordinates(camera_.viewpoint());
 
-			for (const auto& triangle : body_.triangles())
+			std::vector<graphics_vertex> triangle_vertices{  };
+
+			for (const auto& shared_triangle : body_.triangles())
 			{
 				const auto triangle_first_cartesian =
-					three_dimensional::to_cartesian_coordinates(triangle->first());
+					three_dimensional::to_cartesian_coordinates(shared_triangle->first());
 				const auto triangle_second_cartesian =
-					three_dimensional::to_cartesian_coordinates(triangle->second());
+					three_dimensional::to_cartesian_coordinates(shared_triangle->second());
 				const auto triangle_third_cartesian =
-					three_dimensional::to_cartesian_coordinates(triangle->third());
+					three_dimensional::to_cartesian_coordinates(shared_triangle->third());
 
 				if (dot(
 					three_dimensional::get_plane_normal(
@@ -279,10 +303,86 @@ namespace irglab
 					viewpoint_cartesian -
 					(triangle_first_cartesian +
 						triangle_second_cartesian +
-						triangle_third_cartesian) / 3.0f) > 0) visible += *triangle;
+						triangle_third_cartesian) / 3.0f) > 0)
+				{
+					visible += *shared_triangle;
+
+					vector<three_dimensional::dimension_count> first_normal{ 0.0f };
+					vector<three_dimensional::dimension_count> second_normal{ 0.0f };
+					vector<three_dimensional::dimension_count> third_normal{ 0.0f };
+
+					auto first_normal_count = small_zero;
+					auto second_normal_count = small_zero;
+					auto third_normal_count = small_zero;
+
+					for (const auto& triangle :
+						*shared_triangle->first_tracked().trackers())
+					{
+						if (!triangle.expired())
+						{
+							first_normal += triangle.lock()->get_plane_normal();
+							++first_normal_count;
+						}
+					}
+
+					for (const auto& triangle :
+						*shared_triangle->second_tracked().trackers())
+					{
+						if (!triangle.expired())
+						{
+							second_normal += triangle.lock()->get_plane_normal();
+							++second_normal_count;
+						}
+					}
+
+					for (const auto& triangle :
+						*shared_triangle->third_tracked().trackers())
+					{
+						if (!triangle.expired())
+						{
+							third_normal += triangle.lock()->get_plane_normal();
+							++third_normal_count;
+						}
+					}
+
+					first_normal /= first_normal_count;
+					second_normal /= second_normal_count;
+
+					const auto first_lighting =
+						light_source_.get_lighting(shared_triangle->first(), first_normal);
+					const auto second_lighting =
+						light_source_.get_lighting(shared_triangle->second(), second_normal);
+					const auto third_lighting =
+						light_source_.get_lighting(shared_triangle->third(), second_normal);
+
+					auto triangle = shared_triangle->get_detached();
+					triangle *= view_transformation;
+
+					const auto wire_begin_cartesian =
+						three_dimensional::to_cartesian_coordinates(wire.begin());
+					const auto wire_end_cartesian =
+						three_dimensional::to_cartesian_coordinates(wire.end());
+
+					if (wire_begin_cartesian.z > 0 && wire_end_cartesian.z > 0)
+					{
+						line_vertices.emplace_back(
+							graphics_vertex
+							{
+								camera_.get_projection(wire_begin_cartesian),
+								{0.0f, 0.3f, 0.2f}
+							});
+
+						line_vertices.emplace_back(
+							graphics_vertex
+							{
+								camera_.get_projection(wire_end_cartesian),
+								{0.2f, 0.0f, 0.4f}
+							});
+					}
+				}
 
 #if !defined(NDEBUG)
-				else invisible += *triangle;
+				else invisible += *shared_triangle;
 #endif
 
 			}
@@ -293,8 +393,7 @@ namespace irglab
 #endif
 
 
-			const auto view_transformation = camera_.get_view_transformation();
-			std::vector<graphics_vertex> vertices{  };
+			std::vector<graphics_vertex> line_vertices{  };
 
 #if !defined(NDEBUG)
 			for (const auto& shared_wire : invisible.wires())
@@ -309,14 +408,14 @@ namespace irglab
 
 				if (wire_begin_cartesian.z > 0 && wire_end_cartesian.z > 0)
 				{
-					vertices.emplace_back(
+					line_vertices.emplace_back(
 						graphics_vertex
 						{
 							camera_.get_projection(wire_begin_cartesian),
 							{0.0f, 0.3f, 0.2f}
 						});
 
-					vertices.emplace_back(
+					line_vertices.emplace_back(
 						graphics_vertex
 						{
 							camera_.get_projection(wire_end_cartesian),
@@ -336,24 +435,74 @@ namespace irglab
 				const auto wire_end_cartesian =
 					three_dimensional::to_cartesian_coordinates(wire.end());
 
+				const auto begin_body = body_.vertices().find(
+					three_dimensional::convex_tracking_body::tracked_vertex
+					{
+						shared_wire->begin_tracked().inner()
+					});
+
+				const auto end_body = body_.vertices().find(
+					three_dimensional::convex_tracking_body::tracked_vertex
+					{
+						shared_wire->end_tracked().inner()
+					});
+
+				vector<three_dimensional::dimension_count> begin_normal{ 0.0f };
+				vector<three_dimensional::dimension_count> end_normal{ 0.0f };
+
+				auto begin_normal_count = small_zero;
+				auto end_normal_count = small_zero;
+				
+				if (begin_body != body_.vertices().end())
+				{
+					for (const auto& triangle : *begin_body->trackers())
+					{
+						if (!triangle.expired())
+						{
+							begin_normal += triangle.lock()->get_plane_normal();
+							++begin_normal_count;
+						}
+					}
+				}
+
+				if (end_body != body_.vertices().end())
+				{
+					for (const auto& triangle : *end_body->trackers())
+					{
+						if (!triangle.expired())
+						{
+							end_normal += triangle.lock()->get_plane_normal();
+							++end_normal_count;
+						}
+					}
+				}
+
+				begin_normal /= begin_normal_count;
+				end_normal /= end_normal_count;
+
+				const auto begin_lighting =
+					light_source_.get_lighting(wire.begin(), begin_normal);
+				const auto end_lighting =
+					light_source_.get_lighting(wire.end(), end_normal);
+				
 				if (wire_begin_cartesian.z > 0 && wire_end_cartesian.z > 0)
 				{
-					vertices.emplace_back(
+					line_vertices.emplace_back(
 						graphics_vertex
 						{
 							camera_.get_projection(wire_begin_cartesian),
-							{1.0f, 0.6f, 0.0f}
+							begin_lighting * graphics_vertex::color_vector{1.0f, 0.6f, 0.0f}
 						});
 
-					vertices.emplace_back(
+					line_vertices.emplace_back(
 						graphics_vertex
 						{
 							camera_.get_projection(wire_end_cartesian),
-							{0.6f, 1.0f, 0.5f}
+							end_lighting * graphics_vertex::color_vector{1.0f, 0.6f, 0.0f}
 						});
 				}
 			}
-
+			
 #if !defined(NDEBUG)
 			for (const auto& shared_wire : reference_frame_.wires())
 			{
@@ -367,14 +516,14 @@ namespace irglab
 
 				if (wire_begin_cartesian.z > 0 && wire_end_cartesian.z > 0)
 				{
-					vertices.emplace_back(
+					line_vertices.emplace_back(
 						graphics_vertex
 						{
 							camera_.get_projection(wire_begin_cartesian),
 							{0.0f, 0.6f, 0.4f}
 						});
 
-					vertices.emplace_back(
+					line_vertices.emplace_back(
 						graphics_vertex
 						{
 							camera_.get_projection(wire_end_cartesian),
@@ -383,13 +532,15 @@ namespace irglab
 				}
 			}
 #endif
+			
 			const auto window_extent = window_->query_extent();
 			const auto aspect_ratio = window_extent.width /
 				static_cast<float>(window_extent.height);
 
-			for (auto& vertex : vertices) vertex.position.x /= aspect_ratio;
+			for (auto& vertex : line_vertices) vertex.position.x /= aspect_ratio;
 
-			artist_.set_vertices_to_draw(vertices);
+			artist_.set_line_vertices_to_draw(line_vertices);
+			artist_.set_triangle_vertices_to_draw(triangle_vertices);
 		}
 	};
 }

@@ -57,10 +57,19 @@ namespace irglab
 		// sizeof(float) = 4
 		// sizeof(vertex) = 2 * 4 + 3 * 4 = 20 - position_vector + color
 		// buffer size = 20 * 3276 = 65520 < 65536 = 2^16
-		static constexpr size_t vertex_count = 3276;
-		static constexpr vk::DeviceSize vertex_buffer_offset = 0;
-
+		static constexpr size_t vertex_count = 6552;
 		static constexpr vk::DeviceSize buffer_size = sizeof(graphics_vertex) * vertex_count;
+		
+		static constexpr size_t line_vertex_count = 3276;
+		static constexpr vk::DeviceSize line_buffer_offset = 0;
+		static constexpr vk::DeviceSize line_buffer_size = sizeof(graphics_vertex) * line_vertex_count;
+		
+		static constexpr size_t triangle_vertex_count = 3276;
+		static constexpr vk::DeviceSize triangle_buffer_offset = 
+			sizeof(graphics_vertex) * line_vertex_count;
+		static constexpr vk::DeviceSize triangle_buffer_size = 
+			sizeof(graphics_vertex) * triangle_vertex_count;
+
 		
 		explicit memory_manager(const device& device) :
 			device_(device),
@@ -68,7 +77,8 @@ namespace irglab
 			{
 				create_buffer(
 					vk::BufferUsageFlagBits::eVertexBuffer
-					| vk::BufferUsageFlagBits::eTransferDst)
+					| vk::BufferUsageFlagBits::eTransferDst,
+					buffer_size)
 			},
 			vertex_buffer_memory_{ allocate_buffer_memory(*buffer_) },
 			transfer_command_pool_{ create_transfer_command_pool() }
@@ -91,21 +101,34 @@ namespace irglab
 			return *buffer_;
 		}
 
-		
-		void set_vertex_buffer(std::vector<graphics_vertex> vertices) const
+		void set_line_buffer(std::vector<graphics_vertex> vertices) const
 		{
-			auto staging_buffer{ create_buffer(vk::BufferUsageFlagBits::eTransferSrc) };
+			vertices.resize(line_vertex_count);
+			set_vertex_buffer(vertices, line_buffer_offset, line_buffer_size);
+		}
+		
+		void set_triangle_buffer(std::vector<graphics_vertex> vertices) const
+		{
+			vertices.resize(triangle_vertex_count);
+			set_vertex_buffer(vertices, triangle_buffer_offset, triangle_buffer_size);
+		}
+		
+	private:
+		void set_vertex_buffer(
+			const std::vector<graphics_vertex>& vertices,
+			const vk::DeviceSize& offset,
+			const vk::DeviceSize& size) const
+		{
+			auto staging_buffer{ create_buffer(vk::BufferUsageFlagBits::eTransferSrc, size) };
 			auto staging_buffer_memory{ allocate_buffer_memory(*staging_buffer) };
 			device_->bindBufferMemory(*staging_buffer, *staging_buffer_memory, 0);
 
 #if !defined(NDEBUG)
 			std::cout << "Memory bound to staging buffer" << std::endl;
 #endif
-
-			vertices.resize(vertex_count);
-
+			
 			std::memcpy(
-				device_->mapMemory(*staging_buffer_memory, vertex_buffer_offset, buffer_size, {}),
+				device_->mapMemory(*staging_buffer_memory, offset, buffer_size, {}),
 				vertices.data(),
 				buffer_size);
 			device_->unmapMemory(*staging_buffer_memory);
@@ -113,8 +136,8 @@ namespace irglab
 #if !defined(NDEBUG)
 			std::cout << "Vertices copied to staging buffer" << std::endl;
 #endif
-			
-			copy_buffer(*buffer_, *staging_buffer);
+
+			copy_buffer(*buffer_, *staging_buffer, offset, size);
 
 #if !defined(NDEBUG)
 			std::cout << "Staging buffer copied to vertex buffer" << std::endl;
@@ -123,8 +146,11 @@ namespace irglab
 		}
 
 		
-	private:
-		void copy_buffer(const vk::Buffer& destination, const vk::Buffer& source) const
+		void copy_buffer(
+			const vk::Buffer& destination, 
+			const vk::Buffer& source,
+			const vk::DeviceSize& offset,
+			const vk::DeviceSize& size) const
 		{
 			auto transfer_command_buffer
 			{
@@ -143,8 +169,8 @@ namespace irglab
 				{
 					{
 						0,
-						0,
-						buffer_size
+						offset,
+						size
 					}
 				});
 
@@ -196,12 +222,14 @@ namespace irglab
 		const vk::UniqueCommandPool transfer_command_pool_;
 
 		
-		[[nodiscard]] vk::UniqueBuffer create_buffer(const vk::BufferUsageFlags& usage) const
+		[[nodiscard]] vk::UniqueBuffer create_buffer(
+			const vk::BufferUsageFlags& usage,
+			const vk::DeviceSize& size) const
 		{
 			vk::BufferCreateInfo create_info =
 			{
 				{},
-				buffer_size,
+				size,
 				usage,
 				vk::SharingMode::eExclusive
 			};
