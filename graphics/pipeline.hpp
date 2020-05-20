@@ -26,7 +26,7 @@ namespace irglab
         {
     #if !defined(NDEBUG)
             "./shaders/compiled/vertex_shader.spirv",
-            "./shaders/compiled/fragment_shader.spirv"
+            "./shaders/compiled/fractal_shader.spirv"
     #else
             "./shaders/compiled/vertex_shader.spirv",
             "./shaders/compiled/fragment_shader.spirv"
@@ -56,6 +56,7 @@ namespace irglab
 				device
             },
 
+			descriptor_set_layout_{ create_descriptor_set_layout(device) },
             pipeline_layout_{ create_pipeline_layout(device) },
 			inner_{ create_inner(device, swapchain) },
 
@@ -75,10 +76,9 @@ namespace irglab
             return *inner_;
 		}
 
-		[[nodiscard]] std::vector<std::reference_wrapper<const vk::CommandBuffer>> command_buffers()
-			const
+		[[nodiscard]] const vk::CommandBuffer& command_buffer(const size_t index) const
 		{
-            return dereference_vulkan_handles(draw_command_buffers_);
+            return *draw_command_buffers_[index];
 		}
 
 		
@@ -103,6 +103,7 @@ namespace irglab
 
         const shader_manager shader_manager_;
 
+        vk::UniqueDescriptorSetLayout descriptor_set_layout_;
         vk::UniquePipelineLayout pipeline_layout_;
         vk::UniquePipeline inner_;
 
@@ -112,10 +113,41 @@ namespace irglab
         const vk::UniqueCommandPool draw_command_pool_;
         std::vector<vk::UniqueCommandBuffer> draw_command_buffers_;
 
+
+		[[nodiscard]] static vk::UniqueDescriptorSetLayout create_descriptor_set_layout(
+            const device& device)
+		{
+            const vk::DescriptorSetLayoutBinding descriptor_set_layout_binding
+            {
+                0,
+                vk::DescriptorType::eUniformBuffer,
+                1,
+                {},
+                nullptr,
+            };
+            const vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_create_info
+            {
+                {},
+                1,
+                &descriptor_set_layout_binding
+            };
+
+            const auto result = 
+                device->createDescriptorSetLayoutUnique(descriptor_set_layout_create_info);
+			
+#if !defined(NDEBUG)
+            std::cout << "Descriptor set layout created" << std::endl;
+#endif
+
+            return device->createDescriptorSetLayoutUnique(descriptor_set_layout_create_info);
+		}
 		
-        [[nodiscard]] static vk::UniquePipelineLayout create_pipeline_layout(const device& device)
+        [[nodiscard]] vk::UniquePipelineLayout create_pipeline_layout(const device& device) const
         {
-            std::vector<vk::DescriptorSetLayout> descriptor_set_layouts{};
+            std::vector<vk::DescriptorSetLayout> descriptor_set_layouts
+            {
+                *descriptor_set_layout_
+        	};
             std::vector<vk::PushConstantRange> push_constant_ranges{};
 
             auto result = device->createPipelineLayoutUnique(
@@ -157,7 +189,7 @@ namespace irglab
             vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info
             {
                 {},
-                vk::PrimitiveTopology::eLineList,
+                vk::PrimitiveTopology::eTriangleList,
                 VK_FALSE
             };
 
@@ -429,7 +461,7 @@ namespace irglab
 
                 command_buffers[i]->bindVertexBuffers(0,
                     {
-                        memory_manager.buffer()
+                        memory_manager.vertex_buffer()
                     },
                     {
                         0

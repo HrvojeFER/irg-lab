@@ -4,11 +4,12 @@
 // ReSharper disable CppUnusedIncludeDirective
 #include "animation_app.hpp"
 #include "convex_polygon_app.hpp"
+#include "fractal_app.hpp"
 
 
 int main()
 {	
-	irglab::animation_app{ }.run();
+	irglab::fractal_app{ }.run();
 	
 	return EXIT_SUCCESS;
 }

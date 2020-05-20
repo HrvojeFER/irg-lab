@@ -25,7 +25,7 @@
 // UINT32_MAX and UINT64 needed
 #include <cstdint>
 
-// STL
+// STL and algorithms
 #include <algorithm>
 #include <vector>
 #include <array>

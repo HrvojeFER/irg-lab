@@ -27,7 +27,7 @@ namespace irglab
 	struct [[maybe_unused]] animation_app final : app_base
 	{
 		explicit animation_app(
-			const std::string& path_to_body_file = "./objects/teddy.obj"
+			const std::string& path_to_body_file = "./objects/cube.obj"
 #if !defined(NDEBUG)
 			, const std::string& path_to_reference_plane_file = "./objects/reference_plane.obj"
 #endif
@@ -85,22 +85,21 @@ namespace irglab
 		};
 
 		// Animations per second.
-		rational_number animation_speed_ = 1.0f;
-		bool did_exit_animation_ = true;
+		rational_number animation_speed_ = 0.01f;
+		bool did_exit_animation_ = false;
 		std::chrono::time_point<std::chrono::system_clock> animation_start_{};
 
 
 		void pre_run() override
 		{
-			/*animation_start_ = std::chrono::system_clock::now();
+			animation_start_ = std::chrono::system_clock::now();
 			window_->on_key_oneshot(GLFW_KEY_ESCAPE, GLFW_PRESS,
 				[&]()
 				{
 					did_exit_animation_ = true;
 					setup_movement();
-				});*/
+				});
 
-			setup_movement();
 			set_scene_for_drawing();
 		}
 
@@ -557,8 +556,8 @@ namespace irglab
 			for (auto& vertex : line_vertices) vertex.position.x /= aspect_ratio;
 			for (auto& vertex : triangle_vertices) vertex.position.x /= aspect_ratio;
 
-			// artist_.set_vertices_to_draw(triangle_vertices);
-			artist_.set_vertices_to_draw(line_vertices);
+			artist_.set_vertices_to_draw(triangle_vertices);
+			// artist_.set_vertices_to_draw(line_vertices);
 		}
 	};
 }

@@ -168,7 +168,7 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
       <AdditionalIncludeDirectories>C:\VulkanSDK\glm\glm;C:\VulkanSDK\glfw-3.3.2.bin.WIN64\include;C:\VulkanSDK\1.2.131.2\Include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -220,6 +220,7 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
     <ClInclude Include="direction.hpp" />
     <ClInclude Include="environment.hpp" />
     <ClInclude Include="extensions.hpp" />
+    <ClInclude Include="fractal_app.hpp" />
     <ClInclude Include="light_source.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="pipeline.hpp" />
@@ -240,6 +241,7 @@ robocopy "$(ProjectDir)objects" "$(OutputPath)objects"  </Command>
   <ItemGroup>
     <None Include="cpp.hint" />
     <None Include="pre-build.ps1" />
+    <None Include="shaders\fractal_shader.frag" />
     <None Include="shaders\fragment_shader.frag" />
     <None Include="shaders\vertex_shader.vert" />
     <None Include="vulkan.ruleset" />

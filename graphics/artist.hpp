@@ -20,30 +20,32 @@ namespace irglab
 	{
 		artist(const environment& environment, const std::shared_ptr<window>& window) :
 			window_{ window },
-			device_{ environment, *window },
-			memory_manager_{ device_ },
-			swapchain_{ device_, *window },
-			pipeline_{ device_, swapchain_, memory_manager_ },
+			device_{ std::make_shared<irglab::device>(environment, *window) },
+
+			swapchain_{ device(), *window },
+			memory_manager_{ device_, swapchain_ },
+			pipeline_{ device(), swapchain_, memory_manager_ },
+
 			sync_
-		{
-			device_,
 			{
+				device(),
 				{
-					in_flight,
-					max_frames_in_flight
-				}
-			},
-			{
-				{
-					image_available,
-					max_frames_in_flight
+					{
+						in_flight,
+						max_frames_in_flight
+					}
 				},
 				{
-					render_finished,
-					max_frames_in_flight
+					{
+						image_available,
+						max_frames_in_flight
+					},
+					{
+						render_finished,
+						max_frames_in_flight
+					}
 				}
 			}
-		}
 		{
 			window->on_resize([&](vk::Extent2D)
 				{
@@ -68,7 +70,7 @@ namespace irglab
 		// ReSharper disable CppExpressionWithoutSideEffects
 		void draw_frame()
 		{
-			device_->waitForFences(
+			device()->waitForFences(
 				sync_.fence(in_flight, current_frame_),
 				VK_TRUE,
 				UINT64_MAX); // Means there is no timeout
@@ -76,7 +78,7 @@ namespace irglab
 			unsigned int image_index;
 			try
 			{
-				image_index = device_->acquireNextImageKHR(
+				image_index = device()->acquireNextImageKHR(
 					*swapchain_,
 					UINT64_MAX,
 					sync_.semaphore(image_available, current_frame_),
@@ -101,7 +103,7 @@ namespace irglab
 				image_in_flight_fence_indices_[image_index]
 				; image_in_flight_index.has_value())
 			{
-				device_->waitForFences(
+				device()->waitForFences(
 					sync_.fence(in_flight, image_in_flight_index.value()),
 					VK_TRUE,
 					UINT64_MAX);
@@ -109,17 +111,17 @@ namespace irglab
 
 			image_in_flight_fence_indices_[image_index] = current_frame_;
 
-			device_->resetFences(sync_.fence(in_flight, current_frame_));
+			device()->resetFences(sync_.fence(in_flight, current_frame_));
 
 
-			device_.graphics_queue.submit(
+			device().graphics_queue.submit(
 				{
 					{
 						1,
 						&sync_.semaphore(image_available, current_frame_),
 						wait_stages.data(),
 						1,
-						&pipeline_.command_buffers()[image_index].get(),
+						&pipeline_.command_buffer(image_index),
 						1,
 						&sync_.semaphore(render_finished, current_frame_)
 					}
@@ -130,7 +132,7 @@ namespace irglab
 			vk::Result present_result;
 			try
 			{
-				present_result = device_.present_queue.presentKHR(
+				present_result = device().present_queue.presentKHR(
 					{
 						1,
 						&sync_.semaphore(render_finished, current_frame_),
@@ -177,7 +179,7 @@ namespace irglab
 
 		void wait_idle() const
 		{
-			device_->waitIdle();
+			device()->waitIdle();
 		}
 
 
@@ -203,27 +205,37 @@ namespace irglab
 	private:
 		std::weak_ptr<const window> window_;
 
-		const device device_;
-		memory_manager memory_manager_;
+		const std::shared_ptr<const device> device_;
+
+		
 		swapchain swapchain_;
+		memory_manager memory_manager_;
 		pipeline pipeline_;
 
+		
 		static constexpr std::array<vk::PipelineStageFlags, 1> wait_stages
 		{
 			vk::PipelineStageFlagBits::eColorAttachmentOutput
 		};
 
 		static inline const size_t max_frames_in_flight = 2;
+		size_t current_frame_ = 0;
 
 		inline static const synchronizer<>::key in_flight{};
+		std::vector<std::optional<size_t>> image_in_flight_fence_indices_{};
 		inline static const synchronizer<>::key image_available{};
 		inline static const synchronizer<>::key render_finished{};
 		const synchronizer<> sync_;
 
-		std::vector<std::optional<size_t>> image_in_flight_fence_indices_{};
-		bool window_resized_ = false;
-		size_t current_frame_ = 0;
 
+		bool window_resized_ = false;
+
+
+		
+		[[nodiscard]] const device& device() const
+		{
+			return *device_;
+		}
 
 		void register_new_window(window& window)
 		{
@@ -248,8 +260,9 @@ namespace irglab
 
 				wait_idle();
 
-				swapchain_.reconstruct(device_, *shared_window);
-				pipeline_.reconstruct(device_, swapchain_, memory_manager_);
+				swapchain_.reconstruct(*device_, *shared_window);
+				memory_manager_.reconstruct(swapchain_);
+				pipeline_.reconstruct(*device_, swapchain_, memory_manager_);
 
 #if !defined(NDEBUG)
 				std::cout << std::endl << "---- Artist adapted ----" << std::endl <<

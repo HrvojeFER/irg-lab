@@ -135,15 +135,21 @@
     <ClInclude Include="light_source.hpp">
       <Filter>Header Files\Geometry</Filter>
     </ClInclude>
+    <ClInclude Include="fractal_app.hpp">
+      <Filter>Header Files\App</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="pre-build.ps1" />
     <None Include="vulkan.ruleset" />
     <None Include="cpp.hint" />
-    <None Include="shaders\fragment_shader.frag">
+    <None Include="shaders\vertex_shader.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\vertex_shader.vert">
+    <None Include="shaders\fractal_shader.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="shaders\fragment_shader.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>
